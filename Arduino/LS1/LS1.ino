@@ -1,11 +1,11 @@
 //
-// SNAP acoustic recorder
+// LS1 acoustic recorder
 //
 // Loggerhead Instruments
-// 2016
+// 2017
 // David Mann
 // 
-// Modified from PJRC audio code
+// Modified from PJRC audio code and Snap code
 // http://www.pjrc.com/store/teensy3_audio.html
 //
 
@@ -35,9 +35,13 @@ Adafruit_SSD1306 display(OLED_RESET);
 // set this to the hardware serial port you wish to use
 #define HWSERIAL Serial1
 
+//*********************************************************
+//
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
-static uint8_t myID[8];
+//
+//***********************************************************
 
+static uint8_t myID[8];
 unsigned long baud = 115200;
 
 #define SECONDS_IN_MINUTE 60
@@ -59,23 +63,15 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=265,212
 const int myInput = AUDIO_INPUT_LINEIN;
 int gainSetting = 4; //default gain setting; can be overridden in setup file
 
-// Pin Assignments
+// LS1 Pins
 const int hydroPowPin = 2;
-
-// AMX
 const int UP = 4;
-const int DOWN = 3;  // new board pin
-//const int DOWN = 5; // old board down pin
+const int DOWN = 3; 
 const int SELECT = 8;
-const int displayPow = 20;
-const int ledGreen = 16;
-const int ledRed = 17;
-const int BURN1 = 5;
-const int SDSW = 0;
-const int ledWhite = 21;
-const int usbSense = 6;
-const int vSense = 21; 
-//const int vSense = A14;  // moved to Pin 21 for X1
+const int displayPow = 6;
+const int CAM_SW = 5;
+
+const int vSense = 16; 
 
 // Pins used by audio shield
 // https://www.pjrc.com/store/teensy3_audio.html
@@ -101,6 +97,8 @@ time_t t;
 time_t burnTime;
 byte startHour, startMinute, endHour, endMinute; //used in Diel mode
 
+boolean CAMON = 0;
+int camFlag = 1;
 boolean audioFlag = 1;
 
 boolean LEDSON=1;
@@ -114,7 +112,7 @@ unsigned int audioIntervalCount = 0;
 int recMode = MODE_NORMAL;
 long rec_dur = 10;
 long rec_int = 30;
-int wakeahead = 5;  //wake from snooze to give hydrophone and camera time to power up
+int wakeahead = 15;  //wake from snooze to give hydrophone and camera time to power up
 int snooze_hour;
 int snooze_minute;
 int snooze_second;
@@ -166,16 +164,14 @@ void setup() {
 
   pinMode(hydroPowPin, OUTPUT);
   pinMode(displayPow, OUTPUT);
+  pinMode(CAM_SW, OUTPUT);
 
   pinMode(vSense, INPUT);
   analogReference(DEFAULT);
 
   digitalWrite(hydroPowPin, LOW);
   digitalWrite(displayPow, HIGH);
-
-  pinMode(usbSense, OUTPUT);
-  digitalWrite(usbSense, LOW); // make sure no pull-up
-  pinMode(usbSense, INPUT);
+  digitalWrite(CAM_SW, LOW);
   
   //setup display and controls
   pinMode(UP, INPUT);
@@ -208,9 +204,6 @@ void setup() {
 //  if (printDiags==0){
 //      usbDisable();
 //  }
-  
-  pinMode(usbSense, OUTPUT);  //not using any more, set to OUTPUT
-  digitalWrite(usbSense, LOW); 
 
   cDisplay();
   display.println("Loggerhead");
@@ -289,6 +282,8 @@ void setup() {
   // uses this memory to buffer incoming audio.
   AudioMemory(100);
   AudioInit(); // this calls Wire.begin() in control_sgtl5000.cpp
+
+  cam_wake();
   
   digitalWrite(hydroPowPin, HIGH);
   mode = 0;
@@ -313,9 +308,9 @@ void loop() {
       displayClock(startTime, 20);
       displayClock(t, BOTTOM);
       display.display();
-      
-      if(t >= burnTime){
-        digitalWrite(BURN1, HIGH);
+
+      if((t >= startTime - 1) & CAMON==1){ //start camera 1 second before to give a chance to get going
+        if (camFlag)  cam_start();
       }
       if(t >= startTime){      // time to start?
         Serial.println("Record Start.");
@@ -379,6 +374,8 @@ void loop() {
       }
       else{
         stopRecording();
+        cam_stop();
+        
         long ss = startTime - getTeensy3Time() - wakeahead;
         if (ss<0) ss=0;
         snooze_hour = floor(ss/3600);
@@ -394,6 +391,7 @@ void loop() {
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
             if (printDiags==0) Serial.println("Shutting bits down");
             digitalWrite(hydroPowPin, LOW); //hydrophone off
+            cam_off(); //camera off
             if (printDiags==0) Serial.println("hydrophone off");
             audio_power_down();
             if (printDiags==0) Serial.println("audio power down");
@@ -429,6 +427,7 @@ void loop() {
    
           //  audio_enable();
           //  AudioInterrupts();
+            cam_wake();
             audio_power_up();
             //sdInit();  //reinit SD because voltage can drop in hibernate
          }
@@ -528,8 +527,8 @@ void FileInit()
    SdFile::dateTimeCallback(file_date_time);
 
    float voltage = readVoltage();
-   
-   if(File logFile = SD.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+   File logFile;
+   if(logFile = SD.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
       logFile.print(filename);
       logFile.print(',');
       for(int n=0; n<8; n++){
@@ -562,6 +561,10 @@ void FileInit()
    while (!frec){
     file_count += 1;
     sprintf(filename,"F%06d.wav",file_count); //if can't open just use count
+    logFile = SD.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE);
+    logFile.print("File open failed. Retry: ");
+    logFile.println(filename);
+    logFile.close();
     frec = SD.open(filename, O_WRITE | O_CREAT | O_EXCL);
     Serial.println(filename);
     delay(10);
@@ -711,3 +714,30 @@ float readVoltage(){
    return voltage;
 }
 
+
+void cam_wake() {
+  digitalWrite(CAM_SW, HIGH);
+  delay(2000); //power on camera (if off)
+  digitalWrite(CAM_SW, LOW);     
+  CAMON = 1;   
+}
+
+void cam_start() {
+  digitalWrite(CAM_SW, HIGH);
+  delay(500);  // simulate  button press
+  digitalWrite(CAM_SW, LOW);      
+  CAMON = 2;
+}
+
+void cam_stop(){
+  digitalWrite(CAM_SW, HIGH);
+  delay(100);  // simulate  button press
+  digitalWrite(CAM_SW, LOW);  
+}
+
+void cam_off() {
+  digitalWrite(CAM_SW, HIGH);
+  delay(3000); //power down camera (if still on)
+  digitalWrite(CAM_SW, LOW);      
+  CAMON = 0;
+}
