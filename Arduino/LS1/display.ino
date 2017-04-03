@@ -45,6 +45,69 @@ void manualSettings(){
   if (endHour<0 | endHour>23) endHour = 0;
   if (endMinute<0 | endMinute>59) endMinute = 0;
   if (recMode<0 | recMode>1) recMode = 0;
+
+  // get free space on cards
+    cDisplay();
+    display.print("LS1 Init");
+    display.setTextSize(1);
+    display.setCursor(0, 16);
+    display.println("Card Free/Total MB");
+    for (int n=0; n<4; n++){
+      freeMB[n] = 0; //reset
+      Serial.println(); Serial.println();
+      Serial.print("Card:"); Serial.println(n + 1);
+  
+      display.print(n + 1); display.print("    ");
+      display.display();
+      
+      // Initialize the SD card
+      SPI.setMOSI(7);
+      SPI.setSCK(14);
+      SPI.setMISO(12);
+    
+      if(card.init(SPI_FULL_SPEED, chipSelect[n])){
+         if(!volume.init(card)){
+        Serial.println("could not find fat partition");
+        }
+        uint32_t freeSpace;
+        uint32_t volumeMB = volumeInfo(&freeSpace);
+        Serial.print("Free space (MB): ");
+        Serial.println(freeSpace);
+  
+        freeMB[n] = freeSpace;
+        display.print(freeSpace);
+        display.print("/");
+        display.println(volumeMB);
+        display.display();
+      }
+      else{
+        Serial.println("Unable to access the SD card");
+        //Serial.println(card.errorCode());
+       // Serial.println(card.errorData());
+        display.println("  None");
+        display.display();
+    }
+  }
+  display.print("Press ENter");
+  display.display();
+
+  // set back to card 1
+  if(!card.init(SPI_FULL_SPEED, chipSelect[0])){
+       Serial.println("Unable to access the SD card in slot 1");
+       cDisplay();
+       display.println("Error");
+       display.print("Card 1 failed");
+       display.display();
+       while(1);
+  }
+  
+
+  while(digitalRead(SELECT)==1){
+    delay(10);
+  }
+  cDisplay();
+  display.display();
+  delay(600);
   
   while(startRec==0){
     static int curSetting = noSet;
@@ -70,7 +133,8 @@ void manualSettings(){
           autoStartTime = getTeensy3Time();  //reset autoStartTime
         }
         display.print("UP+DN->Rec"); 
-        // Check for start recording
+        
+         // Check for start recording
         startUp = digitalRead(UP);
         startDown = digitalRead(DOWN);
         if(startUp==0 & startDown==0) {
@@ -138,7 +202,7 @@ void manualSettings(){
         break;
     }
     displaySettings();
-    displayClock(getTeensy3Time(), BOTTOM);
+    displayClock(getTeensy3Time(), BOTTOM, 1);
     display.display();
     delay(200);
   }
@@ -228,9 +292,55 @@ void displaySettings(){
     printDigits(endMinute);
     display.println();
   }
+  display.setTextSize(1);
+  uint32_t totalRecSeconds = 0;
+  uint32_t totalSleepSeconds = 0;
+  for(int n=0; n<4; n++){
+    filesPerCard[n] = 0;
+    float fileBytes = 2 * rec_dur * audio_srate + 36;
+    float fileMB = fileBytes / 1024 / 1024;
+    if(freeMB[n]==0) filesPerCard[n] = 0;
+    else{
+      filesPerCard[n] = (uint32_t) floor(freeMB[n] / fileMB); //subtract off 100 to make sure extra space
+      if (filesPerCard[n] >100 ) filesPerCard[n] -= 100;
+        else 
+        filesPerCard[n] = 0;
+    }
+    totalRecSeconds += (filesPerCard[n] * rec_dur);
+    totalSleepSeconds += (filesPerCard[n] * rec_int);
+    //display.setCursor(60, 18 + (n*8));  // display file count for debugging
+    //display.print(n+1); display.print(":");display.print(filesPerCard[n]); 
+  }
+
+  float recDraw = ((float) rec_dur * (mAmpRec + ((float) camFlag * mAmpCam)));
+  float sleepDraw = ((float) rec_int * mAmpSleep) ;
+  float avgCurrentDraw = (recDraw + sleepDraw) / (float) (rec_dur + rec_int);
+  //Serial.print(recDraw); Serial.print(" "); Serial.print(sleepDraw); Serial.print(" ");
+  //Serial.println(avgCurrentDraw);
+  uint32_t powerSeconds = uint32_t (3600.0 * (mAhTotal / avgCurrentDraw));
+
+  if(powerSeconds < (totalRecSeconds + totalSleepSeconds)){
+    displayClock(getTeensy3Time() + powerSeconds, 45, 0);
+    display.setCursor(0, 36);
+    display.print("Battery Limit:");
+    display.print(powerSeconds / 86400);
+    display.print("d");
+  }
+  else{
+    displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
+    display.setCursor(0, 36);
+    display.print("Memory Limit:");
+    display.print((totalRecSeconds + totalSleepSeconds) / 86400);
+    display.print("d");
+  }
+  
+//  if(camFlag){
+//    display.setCursor(70, 18);
+//    display.print("Cam On");
+//  }
 }
 
-void displayClock(time_t t, int loc){
+void displayClock(time_t t, int loc, boolean showSeconds){
   display.setTextSize(1);
   display.setCursor(0,loc);
   display.print(year(t));
@@ -242,7 +352,7 @@ void displayClock(time_t t, int loc){
   printZero(hour());
   display.print(hour(t));
   printDigits(minute(t));
-  printDigits(second(t));
+  if(showSeconds) printDigits(second(t));
 }
 
 void printTime(time_t t){
@@ -298,4 +408,33 @@ void writeEEPROM(){
   EEPROM.write(10, endHour); //byte
   EEPROM.write(11, endMinute); //byte
   EEPROM.write(12, recMode); //byte
+}
+
+uint32_t volumeInfo(uint32_t *freeSpace){
+  // print the type and size of the first FAT-type volume
+  uint32_t volumesize;
+  Serial.print("\nVolume type is FAT");
+  Serial.println(volume.fatType(), DEC);
+  Serial.println();
+  
+  volumesize = volume.blocksPerCluster();    // clusters are collections of blocks
+  volumesize *= volume.clusterCount();       // we'll have a lot of clusters
+  if (volumesize < 8388608ul) {
+    Serial.print("Volume size (bytes): ");
+    Serial.println(volumesize * 512);        // SD card blocks are always 512 bytes
+  }
+  Serial.print("Volume size (Kbytes): ");
+  volumesize /= 2;
+  Serial.println(volumesize);
+  Serial.print("Volume size (Mbytes): ");
+  volumesize /= 1024;
+  Serial.println(volumesize);
+  
+  Serial.println("\nFiles found on the card (name, date and size in bytes): ");
+  root.openRoot(volume);
+  uint32_t usedSpace = root.ls(LS_R | LS_DATE | LS_SIZE);
+  if(volumesize ==0) *freeSpace = 0;
+    else
+    *freeSpace = volumesize - (usedSpace / 1024 / 1024);
+  return volumesize;
 }

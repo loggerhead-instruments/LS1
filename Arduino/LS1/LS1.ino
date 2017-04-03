@@ -30,7 +30,7 @@
 
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
-#define BOTTOM 55
+#define BOTTOM 57
 
 // set this to the hardware serial port you wish to use
 #define HWSERIAL Serial1
@@ -70,8 +70,21 @@ const int DOWN = 3;
 const int SELECT = 8;
 const int displayPow = 6;
 const int CAM_SW = 5;
-
 const int vSense = 16; 
+
+// microSD chip select pins
+#define CS1 10
+#define CS2 15
+#define CS3 20
+#define CS4 21
+int chipSelect[4];
+uint32_t freeMB[4];
+uint32_t filesPerCard[4];
+int currentCard = 0;
+
+Sd2Card card;
+SdVolume volume;
+SdFile root;
 
 // Pins used by audio shield
 // https://www.pjrc.com/store/teensy3_audio.html
@@ -120,6 +133,11 @@ int buf_count;
 long nbufs_per_file;
 boolean settingsChanged = 0;
 
+float mAmpRec = 70;
+float mAmpSleep = 4;
+float mAmpCam = 600;
+float mAhTotal = 12000 * 4; // assume 12Ah per battery pack
+
 long file_count;
 char filename[25];
 char dirname[7];
@@ -157,7 +175,12 @@ unsigned char prev_dtr = 0;
 
 void setup() {
   read_myID();
-  
+
+  chipSelect[0] = CS1;
+  chipSelect[1] = CS2;
+  chipSelect[2] = CS3;
+  chipSelect[3] = CS4;
+
   Serial.begin(baud);
   delay(500);
   Wire.begin();
@@ -213,17 +236,17 @@ void setup() {
   // Initialize the SD card
   SPI.setMOSI(7);
   SPI.setSCK(14);
-  if (!(SD.begin(10))) {
+  if (!(SD.begin(chipSelect[0]))) {
     // stop here if no SD card, but print a message
     Serial.println("Unable to access the SD card");
     
     while (1) {
       cDisplay();
       display.println("SD error. Restart.");
-      displayClock(getTeensy3Time(), BOTTOM);
+      displayClock(getTeensy3Time(), BOTTOM, 1);
       display.display();
       delay(20000);  
-      resetFunc();
+      //resetFunc();
     }
   }
   //SdFile::dateTimeCallback(file_date_time);
@@ -242,7 +265,7 @@ void setup() {
   
   cDisplay();
 
-  int roundSeconds = 300;//modulo to nearest x seconds
+  int roundSeconds = 10;//modulo to nearest x seconds
   t = getTeensy3Time();
   startTime = getTeensy3Time();
   startTime -= startTime % roundSeconds;  
@@ -305,8 +328,16 @@ void loop() {
       t = getTeensy3Time();
       cDisplay();
       display.println("Next Start");
-      displayClock(startTime, 20);
-      displayClock(t, BOTTOM);
+      display.setTextSize(1);
+      display.setCursor(0, 18);
+      display.print("Card:");
+      display.print(currentCard + 1);
+      display.print(" ");
+      display.print(filesPerCard[currentCard]);
+      // display.print("Free:");
+      // display.print();
+      displayClock(startTime, 40, 1);
+      displayClock(t, BOTTOM, 1);
       display.display();
 
       if((t >= startTime - 1) & CAMON==1){ //start camera 1 second before to give a chance to get going
@@ -369,12 +400,14 @@ void loop() {
     if(buf_count >= nbufs_per_file){       // time to stop?
       if(rec_int == 0){
         frec.close();
+        checkSD();
         FileInit();  // make a new file
         buf_count = 0;
       }
       else{
         stopRecording();
         cam_stop();
+        checkSD();
         
         long ss = startTime - getTeensy3Time() - wakeahead;
         if (ss<0) ss=0;
@@ -461,7 +494,7 @@ void continueRecording() {
     queue1.freeBuffer();
     memcpy(buffer+256, queue1.readBuffer(), 256);
     queue1.freeBuffer();
-    if(frec.write(buffer, 512)==-1) resetFunc(); //audio to .wav file
+    frec.write(buffer, 512); //audio to .wav file
       
     buf_count += 1;
     audioIntervalCount += 1;
@@ -550,7 +583,7 @@ void FileInit()
    }
    else{
     if(printDiags) Serial.print("Log open fail.");
-    resetFunc();
+    // resetFunc();
    }
 
     
@@ -593,6 +626,41 @@ void FileInit()
   Serial.print("Buffers: ");
   Serial.println(nbufs_per_file);
 }
+
+void checkSD(){
+  filesPerCard[currentCard] -= 1;
+
+  if(printDiags){
+    Serial.print("Files per card: ");
+    Serial.println(filesPerCard[currentCard]);
+  }
+  
+  // find next card with files available
+  while(filesPerCard[currentCard] == 0){
+    currentCard += 1;
+    if(currentCard == 4)  // all cards full
+    {
+      if(printDiags) Serial.println("All cards full");
+      while(1);
+    }
+
+    if((SD.begin(chipSelect[currentCard]))) {
+      break;
+    }
+    else{
+      if(printDiags){
+        Serial.print("Unable to access the SD card: ");
+        Serial.println(currentCard);
+      }
+    } 
+  }
+
+  if(printDiags){
+    Serial.print("Current Card: ");
+    Serial.println(currentCard + 1);
+  }
+}
+
 
 //This function returns the date and time for SD card file access and modify time. One needs to call in setup() to register this callback function: SdFile::dateTimeCallback(file_date_time);
 void file_date_time(uint16_t* date, uint16_t* time) 
