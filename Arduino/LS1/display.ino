@@ -49,9 +49,11 @@ void manualSettings(){
         uint32_t volumeMB = uint32_t ( 0.000512 * (float) sd.card()->cardSize());
         Serial.print("Free space (MB): ");
         Serial.println((uint32_t) freeSpace);
-  
-        freeMB[n] = freeSpace - 200; // take off 200 MB to be safe
-        if (freeMB[n] < 0) freeMB[n] = 0;
+
+        if (freeSpace < 200) freeMB[n] = 0;
+        else
+          freeMB[n] = freeSpace - 200; // take off 200 MB to be safe
+        
         display.print(freeMB[n]);
         display.print("/");
         display.println(volumeMB);
