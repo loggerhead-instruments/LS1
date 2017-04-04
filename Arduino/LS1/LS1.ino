@@ -37,7 +37,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
+static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 //
 //***********************************************************
 
@@ -416,18 +416,14 @@ void loop() {
         snooze_minute = floor(ss/60);
         ss -= snooze_minute * 60;
         snooze_second = ss;
-
-        Serial.println(snooze_hour);
-        Serial.println(snooze_minute);
-        Serial.println(snooze_second);
         
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
-            if (printDiags==0) Serial.println("Shutting bits down");
+            if (printDiags) Serial.println("Shutting bits down");
             digitalWrite(hydroPowPin, LOW); //hydrophone off
             cam_off(); //camera off
-            if (printDiags==0) Serial.println("hydrophone off");
+            if (printDiags) Serial.println("hydrophone off");
             audio_power_down();
-            if (printDiags==0) Serial.println("audio power down");
+            if (printDiags) Serial.println("audio power down");
 
             if(printDiags){
               Serial.print("Snooze HH MM SS ");
