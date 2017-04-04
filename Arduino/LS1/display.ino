@@ -72,10 +72,11 @@ void manualSettings(){
         uint32_t freeSpace;
         uint32_t volumeMB = volumeInfo(&freeSpace);
         Serial.print("Free space (MB): ");
-        Serial.println(freeSpace);
+        Serial.println((uint32_t) freeSpace);
   
-        freeMB[n] = freeSpace;
-        display.print(freeSpace);
+        freeMB[n] = freeSpace - 200; // take off 200 MB to be safe
+        if (freeMB[n] < 0) freeMB[n] = 0;
+        display.print(freeMB[n]);
         display.print("/");
         display.println(volumeMB);
         display.display();
@@ -88,8 +89,6 @@ void manualSettings(){
         display.display();
     }
   }
-  display.print("Press ENter");
-  display.display();
 
   // set back to card 1
   if(!card.init(SPI_FULL_SPEED, chipSelect[0])){
@@ -102,9 +101,7 @@ void manualSettings(){
   }
   
 
-  while(digitalRead(SELECT)==1){
-    delay(10);
-  }
+  delay(2000);
   cDisplay();
   display.display();
   delay(600);
@@ -295,16 +292,13 @@ void displaySettings(){
   display.setTextSize(1);
   uint32_t totalRecSeconds = 0;
   uint32_t totalSleepSeconds = 0;
+  float fileBytes = (2 * rec_dur * audio_srate) + 44;
+  float fileMB = fileBytes / 1024 / 1024;
   for(int n=0; n<4; n++){
     filesPerCard[n] = 0;
-    float fileBytes = 2 * rec_dur * audio_srate + 36;
-    float fileMB = fileBytes / 1024 / 1024;
     if(freeMB[n]==0) filesPerCard[n] = 0;
     else{
-      filesPerCard[n] = (uint32_t) floor(freeMB[n] / fileMB); //subtract off 100 to make sure extra space
-      if (filesPerCard[n] >100 ) filesPerCard[n] -= 100;
-        else 
-        filesPerCard[n] = 0;
+      filesPerCard[n] = (uint32_t) floor(freeMB[n] / fileMB);
     }
     totalRecSeconds += (filesPerCard[n] * rec_dur);
     totalSleepSeconds += (filesPerCard[n] * rec_int);
@@ -433,8 +427,9 @@ uint32_t volumeInfo(uint32_t *freeSpace){
   Serial.println("\nFiles found on the card (name, date and size in bytes): ");
   root.openRoot(volume);
   uint32_t usedSpace = root.ls(LS_R | LS_DATE | LS_SIZE);
+  Serial.print("Used Space: "); Serial.println(usedSpace);
   if(volumesize ==0) *freeSpace = 0;
     else
-    *freeSpace = volumesize - (usedSpace / 1024 / 1024);
+    *freeSpace = volumesize - usedSpace;
   return volumesize;
 }
