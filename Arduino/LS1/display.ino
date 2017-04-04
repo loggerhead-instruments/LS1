@@ -1,20 +1,8 @@
-
 /* DISPLAY FUNCTIONS
  *  
  */
 
 time_t autoStartTime;
- 
-void printDigits(int digits){
-  // utility function for digital clock display: prints preceding colon and leading 0
-  display.print(":");
-  printZero(digits);
-  display.print(digits);
-}
-
-void printZero(int val){
-  if(val<10) display.print('0');
-}
 
 #define noSet 0
 #define setRecDur 1
@@ -36,17 +24,7 @@ void manualSettings(){
   readEEPROM();
 
   autoStartTime = getTeensy3Time();
-  
-  // make sure settings valid (if EEPROM corrupted or not set yet)
-  if (rec_dur < 0 | rec_dur>100000) rec_dur = 60;
-  if (rec_int<0 | rec_int>100000) rec_int = 60;
-  if (startHour<0 | startHour>23) startHour = 0;
-  if (startMinute<0 | startMinute>59) startMinute = 0;
-  if (endHour<0 | endHour>23) endHour = 0;
-  if (endMinute<0 | endMinute>59) endMinute = 0;
-  if (recMode<0 | recMode>1) recMode = 0;
-
-  // get free space on cards
+// get free space on cards
     cDisplay();
     display.print("LS1 Init");
     display.setTextSize(1);
@@ -56,7 +34,6 @@ void manualSettings(){
       freeMB[n] = 0; //reset
       Serial.println(); Serial.println();
       Serial.print("Card:"); Serial.println(n + 1);
-  
       display.print(n + 1); display.print("    ");
       display.display();
       
@@ -65,12 +42,11 @@ void manualSettings(){
       SPI.setSCK(14);
       SPI.setMISO(12);
     
-      if(card.init(SPI_FULL_SPEED, chipSelect[n])){
-         if(!volume.init(card)){
-        Serial.println("could not find fat partition");
-        }
-        uint32_t freeSpace;
-        uint32_t volumeMB = volumeInfo(&freeSpace);
+      if(sd.begin(chipSelect[n], SD_SCK_MHZ(50))){
+        uint32_t volFree = sd.vol()->freeClusterCount();
+        float fs = 0.000512 * volFree * sd.vol()->blocksPerCluster();
+        uint32_t freeSpace = (uint32_t) fs;
+        uint32_t volumeMB = uint32_t ( 0.000512 * (float) sd.card()->cardSize());
         Serial.print("Free space (MB): ");
         Serial.println((uint32_t) freeSpace);
   
@@ -91,15 +67,23 @@ void manualSettings(){
   }
 
   // set back to card 1
-  if(!card.init(SPI_FULL_SPEED, chipSelect[0])){
-       Serial.println("Unable to access the SD card in slot 1");
-       cDisplay();
-       display.println("Error");
-       display.print("Card 1 failed");
-       display.display();
-       while(1);
+  if(!sd.begin(chipSelect[0], SD_SCK_MHZ(50))){
+    display.print("Card 1 Fail");
+    display.display();
+    while(1);
   }
+
   
+  LoadScript(); // secret settings accessible from card 1
+  
+  // make sure settings valid (if EEPROM corrupted or not set yet)
+  if (rec_dur < 0 | rec_dur>100000) rec_dur = 60;
+  if (rec_int<0 | rec_int>100000) rec_int = 60;
+  if (startHour<0 | startHour>23) startHour = 0;
+  if (startMinute<0 | startMinute>59) startMinute = 0;
+  if (endHour<0 | endHour>23) endHour = 0;
+  if (endMinute<0 | endMinute>59) endMinute = 0;
+  if (recMode<0 | recMode>1) recMode = 0;
 
   delay(2000);
   cDisplay();
@@ -403,33 +387,14 @@ void writeEEPROM(){
   EEPROM.write(11, endMinute); //byte
   EEPROM.write(12, recMode); //byte
 }
+ 
+void printDigits(int digits){
+  // utility function for digital clock display: prints preceding colon and leading 0
+  display.print(":");
+  printZero(digits);
+  display.print(digits);
+}
 
-uint32_t volumeInfo(uint32_t *freeSpace){
-  // print the type and size of the first FAT-type volume
-  uint32_t volumesize;
-  Serial.print("\nVolume type is FAT");
-  Serial.println(volume.fatType(), DEC);
-  Serial.println();
-  
-  volumesize = volume.blocksPerCluster();    // clusters are collections of blocks
-  volumesize *= volume.clusterCount();       // we'll have a lot of clusters
-  if (volumesize < 8388608ul) {
-    Serial.print("Volume size (bytes): ");
-    Serial.println(volumesize * 512);        // SD card blocks are always 512 bytes
-  }
-  Serial.print("Volume size (Kbytes): ");
-  volumesize /= 2;
-  Serial.println(volumesize);
-  Serial.print("Volume size (Mbytes): ");
-  volumesize /= 1024;
-  Serial.println(volumesize);
-  
-  Serial.println("\nFiles found on the card (name, date and size in bytes): ");
-  root.openRoot(volume);
-  uint32_t usedSpace = root.ls(LS_R | LS_DATE | LS_SIZE);
-  Serial.print("Used Space: "); Serial.println(usedSpace);
-  if(volumesize ==0) *freeSpace = 0;
-    else
-    *freeSpace = volumesize - usedSpace;
-  return volumesize;
+void printZero(int val){
+  if(val<10) display.print('0');
 }

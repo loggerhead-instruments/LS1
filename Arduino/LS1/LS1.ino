@@ -12,10 +12,10 @@
 // Compile with 48 MHz Optimize Speed
 
 //#include <SerialFlash.h>
-#include <Audio.h>  //this also includes SD.h from lines 89 & 90
+#include <Audio.h>  //comment out includes SD.h from play_sd_
 #include <Wire.h>
 #include <SPI.h>
-//#include <SdFat.h>
+#include "SdFat.h"
 #include "amx32.h"
 #include <Snooze.h>  //using https://github.com/duff2013/Snooze; uncomment line 62 #define USE_HIBERNATE
 #include <TimeLib.h>
@@ -81,10 +81,10 @@ int chipSelect[4];
 uint32_t freeMB[4];
 uint32_t filesPerCard[4];
 int currentCard = 0;
+boolean newCard = 0;
 
-Sd2Card card;
-SdVolume volume;
-SdFile root;
+SdFat sd;
+SdFile file;
 
 // Pins used by audio shield
 // https://www.pjrc.com/store/teensy3_audio.html
@@ -232,28 +232,28 @@ void setup() {
   display.println("Loggerhead");
   display.display();
   
-  delay(200);
-  // Initialize the SD card
-  SPI.setMOSI(7);
-  SPI.setSCK(14);
-  if (!(SD.begin(chipSelect[0]))) {
-    // stop here if no SD card, but print a message
-    Serial.println("Unable to access the SD card");
-    
-    while (1) {
-      cDisplay();
-      display.println("SD error. Restart.");
-      displayClock(getTeensy3Time(), BOTTOM, 1);
-      display.display();
-      delay(20000);  
-      //resetFunc();
-    }
-  }
+//  delay(200);
+//  // Initialize the SD card
+//  SPI.setMOSI(7);
+//  SPI.setSCK(14);
+//  if (!SD.begin(chipSelect[currentCard])) {
+//    // stop here if no SD card, but print a message
+//    Serial.println("Unable to access the SD card");
+//    
+//    while (1) {
+//      cDisplay();
+//      display.println("SD error. Restart.");
+//      displayClock(getTeensy3Time(), BOTTOM, 1);
+//      display.display();
+//      delay(20000);  
+//      //resetFunc();
+//    }
+//  }
+
+  manualSettings();
   //SdFile::dateTimeCallback(file_date_time);
-  LoadScript(); // secret settings accessible from the card
   
   digitalWrite(hydroPowPin, LOW); // make sure hydrophone powered off when in manual settings in case of accidental reset
-  manualSettings();
   
   // disable buttons; not using any more
   digitalWrite(UP, LOW);
@@ -539,25 +539,25 @@ void FileInit()
 {
    t = getTeensy3Time();
    
-   if (folderMonth != month(t)){
+   if ((folderMonth != month(t)) | newCard){
+    newCard = 0;
     if(printDiags) Serial.println("New Folder");
     folderMonth = month(t);
     sprintf(dirname, "%04d-%02d", year(t), folderMonth);
-    SdFile::dateTimeCallback(file_date_time);
-    SD.mkdir(dirname);
+    file.dateTimeCallback(file_date_time);
+    sd.mkdir(dirname);
    }
    pinMode(vSense, INPUT);  // get ready to read voltage
 
    // open file 
    sprintf(filename,"%s/%02d%02d%02d%02d.wav", dirname, day(t), hour(t), minute(t), second(t));  //filename is DDHHMM
 
-
    // log file
    SdFile::dateTimeCallback(file_date_time);
 
    float voltage = readVoltage();
    File logFile;
-   if(logFile = SD.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+   if(logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
       logFile.print(filename);
       logFile.print(',');
       for(int n=0; n<8; n++){
@@ -583,21 +583,27 @@ void FileInit()
    }
 
     
-   frec = SD.open(filename, O_WRITE | O_CREAT | O_EXCL);
+   frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
    Serial.println(filename);
    delay(100);
    
    while (!frec){
     file_count += 1;
     sprintf(filename,"F%06d.wav",file_count); //if can't open just use count
-    logFile = SD.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE);
+    logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE);
     logFile.print("File open failed. Retry: ");
     logFile.println(filename);
     logFile.close();
-    frec = SD.open(filename, O_WRITE | O_CREAT | O_EXCL);
+    frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
     Serial.println(filename);
     delay(10);
-    if(file_count>1000) resetFunc(); // give up after many tries
+    if(file_count>1000) {
+      currentCard += 1; // try next card after many tries
+      if(currentCard==4) resetFunc(); // try starting all over
+      if(sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50))) {
+        newCard = 1;
+      }
+    }
    }
 
 
@@ -634,21 +640,21 @@ void checkSD(){
   // find next card with files available
   while(filesPerCard[currentCard] == 0){
     currentCard += 1;
+    newCard = 1;
     if(currentCard == 4)  // all cards full
     {
       if(printDiags) Serial.println("All cards full");
       while(1);
     }
 
-    if((SD.begin(chipSelect[currentCard]))) {
-      break;
-    }
-    else{
-      if(printDiags){
+  if(!sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50))){
+       if(printDiags){
         Serial.print("Unable to access the SD card: ");
-        Serial.println(currentCard);
-      }
-    } 
+        Serial.println(currentCard + 1);
+        }
+    }
+    else
+      break;
   }
 
   if(printDiags){
