@@ -37,7 +37,8 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
+static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
+int camFlag = 1;
 //
 //***********************************************************
 
@@ -111,7 +112,6 @@ time_t burnTime;
 byte startHour, startMinute, endHour, endMinute; //used in Diel mode
 
 boolean CAMON = 0;
-int camFlag = 1;
 boolean audioFlag = 1;
 
 boolean LEDSON=1;
@@ -265,7 +265,7 @@ void setup() {
   
   cDisplay();
 
-  int roundSeconds = 10;//modulo to nearest x seconds
+  int roundSeconds = 300;//modulo to nearest x seconds
   t = getTeensy3Time();
   startTime = getTeensy3Time();
   startTime -= startTime % roundSeconds;  
