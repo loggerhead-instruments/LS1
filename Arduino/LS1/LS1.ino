@@ -251,7 +251,7 @@ void setup() {
 //  }
 
   manualSettings();
-  //SdFile::dateTimeCallback(file_date_time);
+  SdFile::dateTimeCallback(file_date_time);
   
   digitalWrite(hydroPowPin, LOW); // make sure hydrophone powered off when in manual settings in case of accidental reset
   
@@ -544,16 +544,21 @@ void FileInit()
     if(printDiags) Serial.println("New Folder");
     folderMonth = month(t);
     sprintf(dirname, "%04d-%02d", year(t), folderMonth);
-    file.dateTimeCallback(file_date_time);
+    //file.dateTimeCallback(file_date_time);
     sd.mkdir(dirname);
    }
    pinMode(vSense, INPUT);  // get ready to read voltage
 
-   // open file 
+   // get new filename
+   int filenameIncrement = 0;
    sprintf(filename,"%s/%02d%02d%02d%02d.wav", dirname, day(t), hour(t), minute(t), second(t));  //filename is DDHHMM
+   while (sd.exists(filename)){
+    filenameIncrement++;
+    sprintf(filename,"%s/%02d%02d%02d%02d_%d.wav", dirname, day(t), hour(t), minute(t), second(t), filenameIncrement);  //filename is DDHHMM
+   }
 
    // log file
-   SdFile::dateTimeCallback(file_date_time);
+   //SdFile::dateTimeCallback(file_date_time);
 
    float voltage = readVoltage();
    File logFile;
@@ -581,31 +586,26 @@ void FileInit()
     if(printDiags) Serial.print("Log open fail.");
     // resetFunc();
    }
-
     
    frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
    Serial.println(filename);
-   delay(100);
    
    while (!frec){
     file_count += 1;
-    sprintf(filename,"F%06d.wav",file_count); //if can't open just use count
+    sprintf(filename,"F%06d.wav",file_count); //if can't open just use count in root directory
     logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE);
     logFile.print("File open failed. Retry: ");
     logFile.println(filename);
     logFile.close();
     frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
     Serial.println(filename);
-    delay(10);
-    if(file_count>1000) {
-      currentCard += 1; // try next card after many tries
-      if(currentCard==4) resetFunc(); // try starting all over
-      if(sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50))) {
-        newCard = 1;
-      }
+//    if(file_count>1000) {
+//      currentCard += 1; // try next card after many tries
+//      if(currentCard==4) resetFunc(); // try starting all over
+//      if(sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50))) {
+//        newCard = 1;
+//      }
     }
-   }
-
 
     //intialize .wav file header
     sprintf(wav_hdr.rId,"RIFF");
