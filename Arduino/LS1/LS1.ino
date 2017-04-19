@@ -125,7 +125,7 @@ unsigned int audioIntervalCount = 0;
 int recMode = MODE_NORMAL;
 long rec_dur = 10;
 long rec_int = 30;
-int wakeahead = 15;  //wake from snooze to give hydrophone and camera time to power up
+int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
 int snooze_hour;
 int snooze_minute;
 int snooze_second;
@@ -172,7 +172,6 @@ float hydroCal = -170;
 
 unsigned char prev_dtr = 0;
 
-
 void setup() {
   read_myID();
 
@@ -210,46 +209,18 @@ void setup() {
   t = getTeensy3Time();
   if (t < 1451606400) Teensy3Clock.set(1451606400);
 
-
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
   delay(100);
   cDisplay();
   display.println("Loggerhead");
-//  Serial.println("Loggerhead");
-//  display.println("USB <->");
   display.display();
-  // Check for external USB connection to microSD
-// while(digitalRead(usbSense)){
-//    delay(500);
-//  }
-
-  // Power down USB if not using Serial monitor
-//  if (printDiags==0){
-//      usbDisable();
-//  }
 
   cDisplay();
   display.println("Loggerhead");
   display.display();
-  
-//  delay(200);
-//  // Initialize the SD card
-//  SPI.setMOSI(7);
-//  SPI.setSCK(14);
-//  if (!SD.begin(chipSelect[currentCard])) {
-//    // stop here if no SD card, but print a message
-//    Serial.println("Unable to access the SD card");
-//    
-//    while (1) {
-//      cDisplay();
-//      display.println("SD error. Restart.");
-//      displayClock(getTeensy3Time(), BOTTOM, 1);
-//      display.display();
-//      delay(20000);  
-//      //resetFunc();
-//    }
-//  }
 
+
+  cam_wake();
   manualSettings();
   SdFile::dateTimeCallback(file_date_time);
   
@@ -306,7 +277,6 @@ void setup() {
   AudioMemory(100);
   AudioInit(); // this calls Wire.begin() in control_sgtl5000.cpp
 
-  cam_wake();
   
   digitalWrite(hydroPowPin, HIGH);
   mode = 0;
@@ -435,27 +405,13 @@ void loop() {
             Serial.println("Going to Sleep");
             delay(100);
   
-           // AudioNoInterrupts();
-  
-            //snooze_config.setAlarm(snooze_hour, snooze_minute, snooze_second);
-            //delay(100);
-            //Snooze.sleep( snooze_config );
-            //Snooze.deepSleep(snooze_config);
-            //Snooze.hibernate( snooze_config);
-  
             alarm.setAlarm(snooze_hour, snooze_minute, snooze_second);
             Snooze.sleep(config_teensy32);
-  
             
             /// ... Sleeping ....
             
-            // Waking up
-           // if (printDiags==0) usbDisable();
-            
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
    
-          //  audio_enable();
-          //  AudioInterrupts();
             cam_wake();
             audio_power_up();
             //sdInit();  //reinit SD because voltage can drop in hibernate
