@@ -243,7 +243,7 @@ void setup() {
   startTime += roundSeconds; //move forward
   stopTime = startTime + rec_dur;  // this will be set on start of recording
   
- // if (recMode==MODE_DIEL) checkDielTime();  
+  if (recMode==MODE_DIEL) checkDielTime();  
   
   nbufs_per_file = (long) (rec_dur * audio_srate / 256.0);
   long ss = rec_int - wakeahead;
@@ -318,7 +318,7 @@ void loop() {
         
         stopTime = startTime + rec_dur;
         startTime = stopTime + rec_int;
-      //  if (recMode==MODE_DIEL) checkDielTime();
+        if (recMode==MODE_DIEL) checkDielTime();
 
         Serial.print("Current Time: ");
         printTime(getTeensy3Time());
@@ -470,26 +470,6 @@ void stopRecording() {
   frec.close();
   delay(100);
 }
-
-
-
-/*
-void sdInit(){
-     if (!(SD.begin(10))) {
-    // stop here if no SD card, but print a message
-    Serial.println("Unable to access the SD card");
-    
-    while (1) {
-      cDisplay();
-      display.println("SD error. Restart.");
-      displayClock(getTeensy3Time(), BOTTOM);
-      display.display();
-      delay(1000);
-      
-    }
-  }
-}
-*/
 
 void FileInit()
 {
@@ -759,6 +739,7 @@ void cam_stop(){
   digitalWrite(CAM_SW, HIGH);
   delay(100);  // simulate  button press
   digitalWrite(CAM_SW, LOW);  
+  delay(100);
 }
 
 void cam_off() {
@@ -766,4 +747,45 @@ void cam_off() {
   delay(3000); //power down camera (if still on)
   digitalWrite(CAM_SW, LOW);      
   CAMON = 0;
+}
+
+void checkDielTime(){
+  unsigned int startMinutes = (startHour * 60) + (startMinute);
+  unsigned int endMinutes = (endHour * 60) + (endMinute );
+  unsigned int startTimeMinutes =  (hour(startTime) * 60) + (minute(startTime));
+  
+  tmElements_t tmStart;
+  tmStart.Year = year(startTime) - 1970;
+  tmStart.Month = month(startTime);
+  tmStart.Day = day(startTime);
+  // check if next startTime is between startMinutes and endMinutes
+  // e.g. 06:00 - 12:00 or 
+  if(startMinutes<endMinutes){
+     if ((startTimeMinutes < startMinutes) | (startTimeMinutes > endMinutes)){
+       // set startTime to startHour startMinute
+       tmStart.Hour = startHour;
+       tmStart.Minute = startMinute;
+       tmStart.Second = 0;
+       startTime = makeTime(tmStart);
+       Serial.print("New diel start:");
+       printTime(startTime);
+       if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
+       Serial.print("New diel start:");
+       printTime(startTime);
+       }
+     }
+  else{  // e.g. 23:00 - 06:00
+    if((startTimeMinutes<startMinutes) & (startTimeMinutes>endMinutes)){
+      // set startTime to startHour:startMinute
+       tmStart.Hour = startHour;
+       tmStart.Minute = startMinute;
+       tmStart.Second = 0;
+       startTime = makeTime(tmStart);
+       Serial.print("New diel start:");
+       printTime(startTime);
+       if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
+       Serial.print("New diel start:");
+       printTime(startTime);
+    }
+  }
 }

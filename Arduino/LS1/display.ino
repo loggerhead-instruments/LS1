@@ -75,7 +75,7 @@ void manualSettings(){
     while(1);
   }
 
-  
+ 
   LoadScript(); // secret settings accessible from card 1
   
   // make sure settings valid (if EEPROM corrupted or not set yet)
@@ -100,7 +100,7 @@ void manualSettings(){
     boolean selectVal = digitalRead(SELECT);
     if(selectVal==0){
       curSetting += 1;
-      if((recMode==MODE_NORMAL & curSetting>8)) curSetting = 0;
+      if((recMode==MODE_NORMAL & curSetting>9) | (recMode==MODE_DIEL & curSetting>13)) curSetting = 0;
     }
 
     cDisplay();
@@ -182,6 +182,36 @@ void manualSettings(){
         if(oldSecond!=newSecond) setTeensyTime(hour(t), minute(t), newSecond, day(t), month(t), year(t));
         display.print("Second:");
         display.print(second(getTeensy3Time()));
+        break;  
+      case setMode:
+        display.print("Mode:");
+        recMode = updateVal(recMode, 0, 1);
+        if (recMode==MODE_NORMAL)  display.print("Norm");
+        if (recMode==MODE_DIEL) display.print("Diel");
+        break;
+      case setStartHour:
+        startHour = updateVal(startHour, 0, 23);
+        display.print("Strt HH:");
+        printZero(startHour);
+        display.print(startHour);
+        break;
+      case setStartMinute:
+        startMinute = updateVal(startMinute, 0, 59);
+        display.print("Strt MM:");
+        printZero(startMinute);
+        display.print(startMinute);
+        break;
+      case setEndHour:
+        endHour = updateVal(endHour, 0, 23);
+        display.print("End HH:");
+        printZero(endHour);
+        display.print(endHour);
+        break;
+      case setEndMinute:
+        endMinute = updateVal(endMinute, 0, 59);
+        display.print("End MM:");
+        printZero(endMinute);
+        display.print(endMinute);
         break;
     }
     displaySettings();
@@ -253,14 +283,15 @@ void displaySettings(){
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0, 18);
-//  display.print("Mode:");
-//  if (recMode==MODE_NORMAL) display.println("Normal");
-//  if (recMode==MODE_DIEL) {
-//    display.println("Diel");
-//  }
+
   display.print("Rec:");
   display.print(rec_dur);
-  display.println("s");
+  display.print("s ");
+  display.print(" Mode:");
+  if (recMode==MODE_NORMAL) display.println("Norm");
+  if (recMode==MODE_DIEL) {
+    display.println("Diel");
+  }
   display.print("Sleep:");
   display.print(rec_int);
   display.println("s");
@@ -277,9 +308,36 @@ void displaySettings(){
   }
   display.setTextSize(1);
   uint32_t totalRecSeconds = 0;
-  uint32_t totalSleepSeconds = 0;
+
   float fileBytes = (2 * rec_dur * audio_srate) + 44;
   float fileMB = fileBytes / 1024 / 1024;
+  float dielFraction = 1.0; //diel mode decreases time spent recording, increases time in sleep
+  if(recMode==MODE_DIEL){
+    float dielHours, dielMinutes;
+    if(startHour>endHour){
+      dielHours = (24 - startHour) + endHour; //  22 to 05 = 7
+    }
+    else{
+      dielHours = endHour - startHour; //e.g. 10 to 12 = 2; 
+    }
+    if(startMinute > endMinute){
+      dielMinutes = (60-startMinute) + endMinute;
+    }
+    else{
+      dielMinutes = endMinute - startMinute;
+    }
+    dielMinutes += (dielHours * 60);
+    dielFraction = dielMinutes / (24.0 * 60.0); // fraction of day recording in diel mode
+  }
+  
+  float recDraw = mAmpRec + ((float) camFlag * mAmpCam);
+  float recFraction = (rec_dur * dielFraction) / (rec_dur + rec_int);
+  float sleepFraction = 1 - recFraction;
+  float avgCurrentDraw = (recDraw * recFraction) + (mAmpSleep * sleepFraction);
+  //Serial.print(recDraw); Serial.print(" "); Serial.print(sleepDraw); Serial.print(" ");
+  //Serial.println(avgCurrentDraw);
+  uint32_t powerSeconds = uint32_t (3600.0 * (mAhTotal / avgCurrentDraw));
+
   for(int n=0; n<4; n++){
     filesPerCard[n] = 0;
     if(freeMB[n]==0) filesPerCard[n] = 0;
@@ -287,30 +345,23 @@ void displaySettings(){
       filesPerCard[n] = (uint32_t) floor(freeMB[n] / fileMB);
     }
     totalRecSeconds += (filesPerCard[n] * rec_dur);
-    totalSleepSeconds += (filesPerCard[n] * rec_int);
     //display.setCursor(60, 18 + (n*8));  // display file count for debugging
     //display.print(n+1); display.print(":");display.print(filesPerCard[n]); 
   }
 
-  float recDraw = ((float) rec_dur * (mAmpRec + ((float) camFlag * mAmpCam)));
-  float sleepDraw = ((float) rec_int * mAmpSleep) ;
-  float avgCurrentDraw = (recDraw + sleepDraw) / (float) (rec_dur + rec_int);
-  //Serial.print(recDraw); Serial.print(" "); Serial.print(sleepDraw); Serial.print(" ");
-  //Serial.println(avgCurrentDraw);
-  uint32_t powerSeconds = uint32_t (3600.0 * (mAhTotal / avgCurrentDraw));
-
-  if(powerSeconds < (totalRecSeconds + totalSleepSeconds)){
-    displayClock(getTeensy3Time() + powerSeconds, 45, 0);
-    display.setCursor(0, 36);
+  float totalSecondsMemory = totalRecSeconds / recFraction;
+  if(powerSeconds < totalSecondsMemory){
+   // displayClock(getTeensy3Time() + powerSeconds, 45, 0);
+    display.setCursor(0, 48);
     display.print("Battery Limit:");
     display.print(powerSeconds / 86400);
     display.print("d");
   }
   else{
-    displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
-    display.setCursor(0, 36);
+  //  displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
+    display.setCursor(0, 48);
     display.print("Memory Limit:");
-    display.print((totalRecSeconds + totalSleepSeconds) / 86400);
+    display.print(totalSecondsMemory / 86400);
     display.print("d");
   }
   
