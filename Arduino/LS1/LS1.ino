@@ -37,8 +37,13 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
+static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 1;
+long rec_dur = 30;
+long rec_int = 10;
+int fftFlag = 1;
+int roundSeconds = 30;//modulo to nearest x seconds
+float hydroCal = -180.0;
 //
 //***********************************************************
 
@@ -56,8 +61,10 @@ unsigned long baud = 115200;
 
 // GUItool: begin automatically generated code
 AudioInputI2S            i2s2;           //xy=105,63
+AudioAnalyzeFFT256       fft256_1; 
 AudioRecordQueue         queue1;         //xy=281,63
 AudioConnection          patchCord1(i2s2, 0, queue1, 0);
+AudioConnection          patchCord2(i2s2, 0, fft256_1, 0);
 AudioControlSGTL5000     sgtl5000_1;     //xy=265,212
 // GUItool: end automatically generated code
 
@@ -123,8 +130,7 @@ float audioIntervalSec = 256.0 / audio_srate; //buffer interval in seconds
 unsigned int audioIntervalCount = 0;
 
 int recMode = MODE_NORMAL;
-long rec_dur = 10;
-long rec_int = 30;
+
 int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
 int snooze_hour;
 int snooze_minute;
@@ -168,12 +174,45 @@ typedef struct {
 
 HdrStruct wav_hdr;
 unsigned int rms;
-float hydroCal = -170;
 
 unsigned char prev_dtr = 0;
 
+// define bands to measure acoustic signals
+int fftPoints = 256; // 5.8 ms at 44.1 kHz
+float binwidth = audio_srate / fftPoints; //256 point FFT; = 172.3 Hz for 44.1kHz
+float fftDurationMs = 1000.0 / binwidth;
+long fftCount;
+float meanBand[4]; // mean band values
+int bandLow[4]; // band low frequencies
+int bandHigh[4];
+int nBins[4]; // number of FFT bins in each band
+int whistleCount = 0;
+int whistleLow = (int) 5000.0 / binwidth; // low frequency bin to start looking for whistles
+int whistleHigh = (int) 16000.0 / binwidth; // high frequency bin to stop looking for whistles
+int oldPeakBin; //for keeping track of peak frequency
+int whistleDelta = 500.0 / binwidth;  // adajcent bins need to be within x Hz of each other to add to runLength
+int runLength = 0;
+int minRunLength = 100.0 / fftDurationMs; // minimium run length to count as whistle
+int fmThreshold = (int) 1000.0 / binwidth; // candidate whistle must cover this number of bins
+int minPeakBin; // minimum frequency in a run length use to make sure whistle crosses enough bins
+int maxPeakBin; // maximum frequency in a run length use to make sure whistle crosses enough bins
+
+float gainDb;
+
 void setup() {
   read_myID();
+
+  bandLow[0] = 1; // start at 172 Hz to eliminate wave noise
+  bandHigh[0] = (int) 1000 / binwidth;
+  bandLow[1] = bandHigh[0];
+  bandHigh[1] = (int) 2000 / binwidth;
+  bandLow[2] = (int) bandHigh[1];
+  bandHigh[2] = (int) 5000 / binwidth;
+  bandLow[3] = bandHigh[2];
+  bandHigh[3] = (int) 20000 / binwidth;
+  for(int i=0; i<4; i++){
+    nBins[i] = bandHigh[i] - bandLow[i];
+  }
 
   chipSelect[0] = CS1;
   chipSelect[1] = CS2;
@@ -182,6 +221,22 @@ void setup() {
 
   Serial.begin(baud);
   delay(500);
+
+  if(printDiags){
+    Serial.print("binwidth: ");
+    Serial.println(binwidth);
+    Serial.print("FFT duration (ms): ");
+    Serial.println(fftDurationMs);
+    Serial.print("minRunLength: ");
+    Serial.println(minRunLength);
+    Serial.print("whistleDelta: ");
+    Serial.println(whistleDelta);
+    Serial.print("Whistle Low Freq Bin: ");
+    Serial.println(whistleLow);
+    Serial.print("Whistle High Freq Bin: ");
+    Serial.println(whistleHigh);
+  }
+  
   Wire.begin();
 
   pinMode(hydroPowPin, OUTPUT);
@@ -236,7 +291,7 @@ void setup() {
   
   cDisplay();
 
-  int roundSeconds = 300;//modulo to nearest x seconds
+  
   t = getTeensy3Time();
   startTime = getTeensy3Time();
   startTime -= startTime % roundSeconds;  
@@ -276,7 +331,7 @@ void setup() {
   // uses this memory to buffer incoming audio.
   AudioMemory(100);
   AudioInit(); // this calls Wire.begin() in control_sgtl5000.cpp
-
+  fft256_1.averageTogether(1); // number of FFTs to average together
   
   digitalWrite(hydroPowPin, HIGH);
   mode = 0;
@@ -335,6 +390,7 @@ void loop() {
 //        display.display();
 
         mode = 1;
+        fftCount = 0;
   
         display.ssd1306_command(SSD1306_DISPLAYOFF); // turn off display during recording
         startRecording();
@@ -345,6 +401,50 @@ void loop() {
   // Record mode
   if (mode == 1) {
     continueRecording();  // download data  
+    
+    //
+    // Automated signal processing
+    //
+    if(fftFlag & fft256_1.available()){
+      // whistle detection
+      float maxV = fft256_1.read(whistleLow);
+      float newV;
+      int peakBin;
+      for(int i=whistleLow+1; i<whistleHigh; i++){
+        newV = fft256_1.read(i);
+        if (newV > maxV){
+          maxV = newV;
+          peakBin = i;
+          if((peakBin < minPeakBin) | (minPeakBin==0)) minPeakBin = peakBin; 
+          if((peakBin > maxPeakBin) | (maxPeakBin==0)) maxPeakBin = peakBin;
+        }
+        if(abs(peakBin - oldPeakBin) < whistleDelta){
+          runLength += 1;
+        }
+        else{
+          if((runLength >= minRunLength) & (maxPeakBin - minPeakBin > fmThreshold) {
+            if (printDiags){
+              Serial.print(runLength * fftDurationMs);
+              Serial.print(" ");
+            }
+            whistleCount++;
+          }
+          runLength = 1;
+        }
+        oldPeakBin = peakBin;
+      }
+
+      // calculate band level noise
+      fftCount += 1;  // counter to divide meanBand by before sending to cell
+      for(int n=0; n<4; n++){
+        for(int i=bandLow[n]; i<bandHigh[n]; i++){
+          meanBand[n] += (fft256_1.read(i) / nBins[n]); // accumulate across band
+        }
+      }
+    }
+    //
+    // End audomated signal processing
+    //
 
     /*
      // update clock while recording
@@ -368,16 +468,20 @@ void loop() {
       */
       
     if(buf_count >= nbufs_per_file){       // time to stop?
+      if(fftFlag) summarizeSignals();
+      
       if(rec_int == 0){
         frec.close();
         checkSD();
         FileInit();  // make a new file
         buf_count = 0;
+        if(fftFlag) resetSignals();
       }
       else{
         stopRecording();
         cam_stop();
         checkSD();
+        if(fftFlag) resetSignals();
         
         long ss = startTime - getTeensy3Time() - wakeahead;
         if (ss<0) ss=0;
@@ -503,6 +607,21 @@ void FileInit()
       logFile.print(',');
       for(int n=0; n<8; n++){
         logFile.print(myID[n]);
+      }
+      if(fftFlag){
+        for (int i=0; i<4; i++){
+          logFile.print(',');
+          if(meanBand[i]>0.00001){
+            float spectrumLevel = 20*log10(meanBand[i] / fftCount) - (10 * log10(binwidth));
+            spectrumLevel = spectrumLevel - hydroCal - gainDb;
+            logFile.print(spectrumLevel);
+          }
+           else{
+            logFile.print("-100");
+           }
+        }
+        logFile.print(',');
+        logFile.println(whistleCount); 
       }
       logFile.print(',');
       logFile.print(gainSetting); 
@@ -638,6 +757,24 @@ void AudioInit(){
 // 15: 0.24 Volts p-p
   //sgtl5000_1.autoVolumeDisable();
  // sgtl5000_1.audioProcessorDisable();
+  switch(gainSetting){
+    case 0: gainDb = -20 * log10(3.12 / 2.0);
+    case 1: gainDb = -20 * log10(2.63 / 2.0);
+    case 2: gainDb = -20 * log10(2.22 / 2.0);
+    case 3: gainDb = -20 * log10(1.87 / 2.0);
+    case 4: gainDb = -20 * log10(1.58 / 2.0);
+    case 5: gainDb = -20 * log10(1.33 / 2.0);
+    case 6: gainDb = -20 * log10(1.11 / 2.0);
+    case 7: gainDb = -20 * log10(0.94 / 2.0);
+    case 8: gainDb = -20 * log10(0.79 / 2.0);
+    case 9: gainDb = -20 * log10(0.67 / 2.0);
+    case 10: gainDb = -20 * log10(0.56 / 2.0);
+    case 11: gainDb = -20 * log10(0.48 / 2.0);
+    case 12: gainDb = -20 * log10(0.40 / 2.0);
+    case 13: gainDb = -20 * log10(0.34 / 2.0);
+    case 14: gainDb = -20 * log10(0.29 / 2.0);
+    case 15: gainDb = -20 * log10(0.24 / 2.0);
+  }
 }
 
 time_t getTeensy3Time()
@@ -789,3 +926,31 @@ void checkDielTime(){
     }
   }
 }
+
+// send current values to display or cell
+void summarizeSignals(){
+  Serial.println("Mean bands");
+  for (int i=0; i<4; i++){
+    if(meanBand[i]>0.00001){
+      float spectrumLevel = 20*log10(meanBand[i] / fftCount) - (10 * log10(binwidth));
+      spectrumLevel = spectrumLevel - hydroCal - gainDb;
+      Serial.println(spectrumLevel);
+    }
+     else{
+      Serial.println(meanBand[i] / fftCount);
+     }
+  }
+  Serial.print("Whistles: ");
+  Serial.println(whistleCount);
+}
+
+void resetSignals(){
+  for (int i=0; i<4; i++){
+    meanBand[i] = 0;
+  }
+  whistleCount = 0;
+  fftCount = 0;
+  minPeakBin = 0;
+  maxPeakBin = 0;
+}
+
