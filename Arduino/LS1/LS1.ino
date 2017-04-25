@@ -422,7 +422,7 @@ void loop() {
           runLength += 1;
         }
         else{
-          if((runLength >= minRunLength) & (maxPeakBin - minPeakBin > fmThreshold) {
+          if((runLength >= minRunLength) & (maxPeakBin - minPeakBin > fmThreshold)) {
             if (printDiags){
               Serial.print(runLength * fftDurationMs);
               Serial.print(" ");
