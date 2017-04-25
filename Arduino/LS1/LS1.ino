@@ -192,7 +192,7 @@ int whistleHigh = (int) 16000.0 / binwidth; // high frequency bin to stop lookin
 int oldPeakBin; //for keeping track of peak frequency
 int whistleDelta = 500.0 / binwidth;  // adajcent bins need to be within x Hz of each other to add to runLength
 int runLength = 0;
-int minRunLength = 100.0 / fftDurationMs; // minimium run length to count as whistle
+int minRunLength = 300.0 / fftDurationMs; // minimium run length to count as whistle
 int fmThreshold = (int) 1000.0 / binwidth; // candidate whistle must cover this number of bins
 int minPeakBin; // minimum frequency in a run length use to make sure whistle crosses enough bins
 int maxPeakBin; // maximum frequency in a run length use to make sure whistle crosses enough bins
@@ -406,33 +406,40 @@ void loop() {
     // Automated signal processing
     //
     if(fftFlag & fft256_1.available()){
+      
       // whistle detection
       float maxV = fft256_1.read(whistleLow);
       float newV;
       int peakBin;
+
+      // find peak frequency
       for(int i=whistleLow+1; i<whistleHigh; i++){
         newV = fft256_1.read(i);
         if (newV > maxV){
           maxV = newV;
           peakBin = i;
-          if((peakBin < minPeakBin) | (minPeakBin==0)) minPeakBin = peakBin; 
-          if((peakBin > maxPeakBin) | (maxPeakBin==0)) maxPeakBin = peakBin;
         }
-        if(abs(peakBin - oldPeakBin) < whistleDelta){
-          runLength += 1;
-        }
-        else{
-          if((runLength >= minRunLength) & (maxPeakBin - minPeakBin > fmThreshold)) {
-            if (printDiags){
-              Serial.print(runLength * fftDurationMs);
-              Serial.print(" ");
-            }
-            whistleCount++;
-          }
-          runLength = 1;
-        }
-        oldPeakBin = peakBin;
       }
+
+      // track minimum and maximum peakBins during run
+      if((peakBin < minPeakBin) | (minPeakBin==0)) minPeakBin = peakBin; 
+          if((peakBin > maxPeakBin) | (maxPeakBin==0)) maxPeakBin = peakBin;
+
+      // increment runLength if new peak is withing whistleDelta of old peak
+      if(abs(peakBin - oldPeakBin) < whistleDelta){
+        runLength += 1;
+      }
+      else{  // end of run, check if long enough and covered enough frequency bins
+        if((runLength >= minRunLength) & (maxPeakBin - minPeakBin > fmThreshold)) {
+          if (printDiags){
+            Serial.print(runLength * fftDurationMs);
+            Serial.print(" ");
+          }
+          whistleCount++;
+        }
+        runLength = 1;
+      }
+      oldPeakBin = peakBin;
 
       // calculate band level noise
       fftCount += 1;  // counter to divide meanBand by before sending to cell
