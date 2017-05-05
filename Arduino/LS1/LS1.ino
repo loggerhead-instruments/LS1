@@ -41,9 +41,10 @@ static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostic
 int camFlag = 1;
 long rec_dur = 30;
 long rec_int = 10;
-int fftFlag = 1;
-int roundSeconds = 30;//modulo to nearest x seconds
+int fftFlag = 0;
+int roundSeconds = 60;//modulo to nearest x seconds
 float hydroCal = -180.0;
+int wakeahead = 30;  //wake from snooze to give hydrophone and camera time to power up
 //
 //***********************************************************
 
@@ -131,7 +132,6 @@ unsigned int audioIntervalCount = 0;
 
 int recMode = MODE_NORMAL;
 
-int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
 int snooze_hour;
 int snooze_minute;
 int snooze_second;
@@ -242,6 +242,7 @@ void setup() {
   pinMode(hydroPowPin, OUTPUT);
   pinMode(displayPow, OUTPUT);
   pinMode(CAM_SW, OUTPUT);
+  cam_wake();
 
   pinMode(vSense, INPUT);
   analogReference(DEFAULT);
@@ -274,8 +275,6 @@ void setup() {
   display.println("Loggerhead");
   display.display();
 
-
-  cam_wake();
   manualSettings();
   SdFile::dateTimeCallback(file_date_time);
   
@@ -290,7 +289,6 @@ void setup() {
   pinMode(SELECT, OUTPUT);
   
   cDisplay();
-
   
   t = getTeensy3Time();
   startTime = getTeensy3Time();
@@ -874,14 +872,14 @@ void cam_wake() {
 
 void cam_start() {
   digitalWrite(CAM_SW, HIGH);
-  delay(500);  // simulate  button press
+  delay(200);  // simulate  button press
   digitalWrite(CAM_SW, LOW);      
   CAMON = 2;
 }
 
 void cam_stop(){
   digitalWrite(CAM_SW, HIGH);
-  delay(100);  // simulate  button press
+  delay(200);  // simulate  button press
   digitalWrite(CAM_SW, LOW);  
   delay(100);
 }
