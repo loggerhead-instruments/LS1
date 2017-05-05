@@ -44,7 +44,7 @@ long rec_int = 10;
 int fftFlag = 0;
 int roundSeconds = 60;//modulo to nearest x seconds
 float hydroCal = -180.0;
-int wakeahead = 30;  //wake from snooze to give hydrophone and camera time to power up
+int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
 //
 //***********************************************************
 
