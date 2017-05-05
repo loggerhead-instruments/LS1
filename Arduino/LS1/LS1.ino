@@ -882,6 +882,7 @@ void cam_stop(){
   delay(200);  // simulate  button press
   digitalWrite(CAM_SW, LOW);  
   delay(100);
+  CAMON = 1;   
 }
 
 void cam_off() {
