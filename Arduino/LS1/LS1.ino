@@ -38,10 +38,10 @@ Adafruit_SSD1306 display(OLED_RESET);
 //*********************************************************
 //
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 1;
+int camFlag = 0;
 long rec_dur = 30;
 long rec_int = 10;
-int fftFlag = 0;
+int fftFlag = 1;
 int roundSeconds = 60;//modulo to nearest x seconds
 float hydroCal = -180.0;
 int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
@@ -196,6 +196,7 @@ int minRunLength = 300.0 / fftDurationMs; // minimium run length to count as whi
 int fmThreshold = (int) 1000.0 / binwidth; // candidate whistle must cover this number of bins
 int minPeakBin; // minimum frequency in a run length use to make sure whistle crosses enough bins
 int maxPeakBin; // maximum frequency in a run length use to make sure whistle crosses enough bins
+String dataPacket; // data packed for Particle transmission after each file
 
 float gainDb;
 
@@ -220,6 +221,7 @@ void setup() {
   chipSelect[3] = CS4;
 
   Serial.begin(baud);
+  HWSERIAL.begin(baud);
   delay(500);
 
   if(printDiags){
@@ -399,7 +401,7 @@ void loop() {
   // Record mode
   if (mode == 1) {
     continueRecording();  // download data  
-    
+    if(fftFlag) checkSerial(); // see if packet of data is being requested by Particle
     //
     // Automated signal processing
     //
@@ -484,7 +486,7 @@ void loop() {
       }
       else{
         stopRecording();
-        cam_stop();
+        
         checkSD();
         if(fftFlag) resetSignals();
         
@@ -524,6 +526,9 @@ void loop() {
             cam_wake();
             audio_power_up();
             //sdInit();  //reinit SD because voltage can drop in hibernate
+         }
+         else{
+          cam_stop();
          }
          
         //digitalWrite(displayPow, HIGH); //start display up on wake
@@ -951,6 +956,7 @@ void summarizeSignals(){
 }
 
 void resetSignals(){
+  packData(); //store old data in string to send via Particle
   for (int i=0; i<4; i++){
     meanBand[i] = 0;
   }
