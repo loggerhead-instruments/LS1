@@ -38,7 +38,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 //*********************************************************
 //
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 0;
+int camFlag = 1;
 long rec_dur = 30;
 long rec_int = 10;
 int fftFlag = 0;
@@ -962,7 +962,6 @@ void summarizeSignals(){
 }
 
 void resetSignals(){
-  packData(); //store old data in string to send via Particle
   for (int i=0; i<4; i++){
     meanBand[i] = 0;
   }
