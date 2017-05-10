@@ -41,7 +41,7 @@ static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostic
 int camFlag = 0;
 long rec_dur = 30;
 long rec_int = 10;
-int fftFlag = 1;
+int fftFlag = 0;
 int roundSeconds = 60;//modulo to nearest x seconds
 float hydroCal = -180.0;
 int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
@@ -73,6 +73,7 @@ const int myInput = AUDIO_INPUT_LINEIN;
 int gainSetting = 4; //default gain setting; can be overridden in setup file
 
 // LS1 Pins
+const int briteLED = 1;
 const int hydroPowPin = 2;
 const int UP = 4;
 const int DOWN = 3; 
@@ -244,6 +245,7 @@ void setup() {
   pinMode(hydroPowPin, OUTPUT);
   pinMode(displayPow, OUTPUT);
   pinMode(CAM_SW, OUTPUT);
+  pinMode(briteLED, OUTPUT);
   cam_wake();
 
   pinMode(vSense, INPUT);
@@ -252,6 +254,7 @@ void setup() {
   digitalWrite(hydroPowPin, LOW);
   digitalWrite(displayPow, HIGH);
   digitalWrite(CAM_SW, LOW);
+  digitalWrite(briteLED, LOW);
   
   //setup display and controls
   pinMode(UP, INPUT);
@@ -401,7 +404,7 @@ void loop() {
   // Record mode
   if (mode == 1) {
     continueRecording();  // download data  
-    if(fftFlag) checkSerial(); // see if packet of data is being requested by Particle
+
     //
     // Automated signal processing
     //
@@ -876,6 +879,7 @@ void cam_wake() {
 }
 
 void cam_start() {
+  digitalWrite(briteLED, HIGH);
   digitalWrite(CAM_SW, HIGH);
   delay(200);  // simulate  button press
   digitalWrite(CAM_SW, LOW);      
@@ -888,12 +892,14 @@ void cam_stop(){
   digitalWrite(CAM_SW, LOW);  
   delay(100);
   CAMON = 1;   
+  digitalWrite(briteLED, LOW);
 }
 
 void cam_off() {
   digitalWrite(CAM_SW, HIGH);
   delay(3000); //power down camera (if still on)
-  digitalWrite(CAM_SW, LOW);      
+  digitalWrite(CAM_SW, LOW);  
+  digitalWrite(briteLED, LOW);    
   CAMON = 0;
 }
 
