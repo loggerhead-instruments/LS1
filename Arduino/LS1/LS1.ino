@@ -73,7 +73,7 @@ const int myInput = AUDIO_INPUT_LINEIN;
 int gainSetting = 4; //default gain setting; can be overridden in setup file
 
 // LS1 Pins
-const int briteLED = 1;
+const int briteLED = 0;
 const int hydroPowPin = 2;
 const int UP = 4;
 const int DOWN = 3; 
