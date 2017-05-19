@@ -266,7 +266,7 @@ void setup() {
 
   delay(500);    
 
-  setSyncProvider(getTeensy3Time); //use Teensy RTC to keep time
+  //setSyncProvider(getTeensy3Time); //use Teensy RTC to keep time
   t = getTeensy3Time();
   if (t < 1451606400) Teensy3Clock.set(1451606400);
 
