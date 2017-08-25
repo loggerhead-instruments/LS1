@@ -129,7 +129,7 @@
 // 8  VOL_EXPO_RAMP Exponential Volume Ramp Enable
 //        0x0 = Linear ramp over top 4 volume octaves
 //        0x1 = Exponential ramp over full volume range
-//        This bit only takes effect if VOL_RAMP_EN is 1.
+//        This bit onlay takes effect if VOL_RAMP_EN is 1.
 // 3  DAC_MUTE_RIGHT  DAC Right Mute (default=1)
 //        0x0 = Unmute
 //        0x1 = Muted
@@ -445,7 +445,8 @@ bool audio_enable(void)
   chipWrite(CHIP_I2S_CTRL, 0x0130); // SCLK=32*Fs, 16bit, I2S format
   // default signal routing is ok?
   chipWrite(CHIP_SSS_CTRL, 0x0010); // ADC->I2S, I2S->DAC
-  chipWrite(CHIP_ADCDAC_CTRL, 0x000C); // DAC mute; ADC high pass and bypass normal operation
+  //chipWrite(CHIP_ADCDAC_CTRL, 0x000C); // DAC mute; ADC high pass and bypass normal operation
+  chipWrite(CHIP_ADCDAC_CTRL, 0x000D); // DAC mute; ADC high pass bypassed
   chipWrite(CHIP_DAC_VOL, 0xFFFF); // dac mute
   chipWrite(CHIP_ANA_HP_CTRL, 0x7F7F); // set headphone volume (lowest level)
   //chipWrite(CHIP_ANA_CTRL, 0x0036);  // enable zero cross detectors; line input
