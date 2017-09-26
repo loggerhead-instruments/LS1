@@ -280,10 +280,9 @@ void setup() {
   display.println("Loggerhead");
   display.display();
 
+  digitalWrite(hydroPowPin, HIGH);
   manualSettings();
   SdFile::dateTimeCallback(file_date_time);
-  
-  digitalWrite(hydroPowPin, LOW); // make sure hydrophone powered off when in manual settings in case of accidental reset
   
   // disable buttons; not using any more
   digitalWrite(UP, LOW);
@@ -335,8 +334,7 @@ void setup() {
   AudioMemory(100);
   AudioInit(); // this calls Wire.begin() in control_sgtl5000.cpp
   fft256_1.averageTogether(1); // number of FFTs to average together
-  
-  digitalWrite(hydroPowPin, HIGH);
+
   mode = 0;
 
   // create first folder to hold data
