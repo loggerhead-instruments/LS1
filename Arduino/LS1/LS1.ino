@@ -143,7 +143,7 @@ boolean settingsChanged = 0;
 float mAmpRec = 70;
 float mAmpSleep = 4;
 float mAmpCam = 600;
-float mAhTotal = 12000 * 4; // assume 12Ah per battery pack
+float mAhTotal = 12000.0 * 4.0; // assume 12Ah per battery pack
 
 long file_count;
 char filename[25];
@@ -335,7 +335,8 @@ void setup() {
   Serial.print("Time to first record ");
   Serial.println(time_to_first_rec);
 
-  audio_freeze_adc_hp();
+  //audio_freeze_adc_hp();
+  audio_bypass_adc_hp();
   
   mode = 0;
 

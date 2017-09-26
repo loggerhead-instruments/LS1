@@ -333,8 +333,7 @@ void displaySettings(){
   float recFraction = (rec_dur * dielFraction) / (rec_dur + rec_int);
   float sleepFraction = 1 - recFraction;
   float avgCurrentDraw = (recDraw * recFraction) + (mAmpSleep * sleepFraction);
-  //Serial.print(recDraw); Serial.print(" "); Serial.print(sleepDraw); Serial.print(" ");
-  //Serial.println(avgCurrentDraw);
+
   uint32_t powerSeconds = uint32_t (3600.0 * (mAhTotal / avgCurrentDraw));
 
   for(int n=0; n<4; n++){
@@ -362,6 +361,11 @@ void displaySettings(){
     display.print("Memory Limit:");
     display.print(totalSecondsMemory / 86400);
     display.print("d");
+  }
+
+  if(camFlag){
+    display.setCursor(0,36);
+    display.print("Camera Enabled");
   }
   
 //  if(camFlag){

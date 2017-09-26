@@ -445,8 +445,7 @@ bool audio_enable(void)
   //chipWrite(CHIP_SSS_CTRL, 0x0010); // ADC->I2S, I2S->DAC
   chipWrite(CHIP_SSS_CTRL, 0x0000); // ADC->I2S, ADC->DAC
 
-  // chipWrite(CHIP_ADCDAC_CTRL, 0x000B); // DAC mute right; DAC left unmute; ADC high pass filter frozen; ADC HPF bypassed (so does not matter it is frozen); get offset of about 370 units
-  chipWrite(CHIP_ADCDAC_CTRL, 0x0008); // DAC mute right; DAC left unmute; ADC HPF normal operation
+    chipWrite(CHIP_ADCDAC_CTRL, 0x0008); // DAC mute right; DAC left unmute; ADC HPF normal operation
   
   
   chipWrite(CHIP_DAC_VOL, 0xFF3C); // dac mute right; left 0 dB
@@ -466,6 +465,11 @@ bool audio_enable(void)
 
 void audio_freeze_adc_hp(){
    chipWrite(CHIP_ADCDAC_CTRL, 0x000A); // DAC mute right; DAC left unmute; ADC high pass filter frozen; ADC HPF normal operation
+}
+
+void audio_bypass_adc_hp(){
+  chipWrite(CHIP_ADCDAC_CTRL, 0x000B); // DAC mute right; DAC left unmute; ADC high pass filter frozen; ADC HPF bypassed (so does not matter it is frozen); get offset of about 370 units
+
 }
 
 void audio_power_down(void){
