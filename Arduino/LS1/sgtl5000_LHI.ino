@@ -445,7 +445,9 @@ bool audio_enable(void)
   //chipWrite(CHIP_SSS_CTRL, 0x0010); // ADC->I2S, I2S->DAC
   chipWrite(CHIP_SSS_CTRL, 0x0000); // ADC->I2S, ADC->DAC
 
+  // chipWrite(CHIP_ADCDAC_CTRL, 0x000B); // DAC mute right; DAC left unmute; ADC high pass filter frozen; ADC HPF bypassed (so does not matter it is frozen); get offset of about 370 units
   chipWrite(CHIP_ADCDAC_CTRL, 0x0008); // DAC mute right; DAC left unmute; ADC HPF normal operation
+  
   
   chipWrite(CHIP_DAC_VOL, 0xFF3C); // dac mute right; left 0 dB
   chipWrite(CHIP_ANA_HP_CTRL, 0x7F7F); // set headphone volume (lowest level)
@@ -458,11 +460,12 @@ bool audio_enable(void)
   chipWrite(CHIP_ANA_ADC_CTRL, 0x0000); // 0 dB gain
   //chipWrite(CHIP_ANA_ADC_CTRL, 0x0100); // -6 dB gain
   
-  // get a good value for ADC offset
-  delay(2000);
-  //chipWrite(CHIP_ADCDAC_CTRL, 0x000A); // DAC mute right; DAC left unmute; ADC high pass filter frozen; ADC HPF normal operation
-   chipWrite(CHIP_ADCDAC_CTRL, 0x000B); // DAC mute right; DAC left unmute; ADC high pass filter frozen; ADC HPF bypassed; get offset of about 370 units
-  return true;
+  
+   return true;
+}
+
+void audio_freeze_adc_hp(){
+   chipWrite(CHIP_ADCDAC_CTRL, 0x000A); // DAC mute right; DAC left unmute; ADC high pass filter frozen; ADC HPF normal operation
 }
 
 void audio_power_down(void){

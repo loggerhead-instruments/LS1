@@ -281,6 +281,12 @@ void setup() {
   display.display();
 
   digitalWrite(hydroPowPin, HIGH);
+  // Audio connections require memory, and the record queue
+  // uses this memory to buffer incoming audio.
+  AudioMemory(100);
+  AudioInit(); // this calls Wire.begin() in control_sgtl5000.cpp
+  fft256_1.averageTogether(1); // number of FFTs to average together
+
   manualSettings();
   SdFile::dateTimeCallback(file_date_time);
   
@@ -329,12 +335,8 @@ void setup() {
   Serial.print("Time to first record ");
   Serial.println(time_to_first_rec);
 
-  // Audio connections require memory, and the record queue
-  // uses this memory to buffer incoming audio.
-  AudioMemory(100);
-  AudioInit(); // this calls Wire.begin() in control_sgtl5000.cpp
-  fft256_1.averageTogether(1); // number of FFTs to average together
-
+  audio_freeze_adc_hp();
+  
   mode = 0;
 
   // create first folder to hold data
