@@ -63,6 +63,12 @@ int ProcCmd(char *pCmd)
         gainSetting = lv1;
         break;
       }
+
+      case ('N' + ('D'<<8)):
+      {
+        noDC = 1;
+        break;
+      }
       
       case ('S' + ('R'<<8)):
       {

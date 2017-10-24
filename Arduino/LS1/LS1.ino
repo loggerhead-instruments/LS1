@@ -38,13 +38,14 @@ Adafruit_SSD1306 display(OLED_RESET);
 //*********************************************************
 //
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 1;
+int camFlag = 0;
 long rec_dur = 30;
 long rec_int = 10;
 int fftFlag = 0;
 int roundSeconds = 60;//modulo to nearest x seconds
 float hydroCal = -180.0;
 int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
+int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset
 //
 //***********************************************************
 
@@ -335,8 +336,8 @@ void setup() {
   Serial.print("Time to first record ");
   Serial.println(time_to_first_rec);
 
-  //audio_freeze_adc_hp();
-  audio_bypass_adc_hp();
+  if(noDC==0) audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
+  //audio_bypass_adc_hp(); // this will not lower the DC offset voltage, lowest noise
   
   mode = 0;
 
