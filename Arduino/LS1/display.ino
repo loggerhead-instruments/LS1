@@ -254,6 +254,9 @@ int updateVal(long curVal, long minVal, long maxVal){
     if(downVal==0){
       settingsChanged = 1;
       if(heldDown < 20) delay(200);
+      if(curVal < 10) { // going down to 0, go back to slow mode
+        heldDown = 0;
+      }
         curVal -= 1;
         heldDown += 1;
     }
