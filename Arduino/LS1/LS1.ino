@@ -336,13 +336,12 @@ void setup() {
   Serial.print("Time to first record ");
   Serial.println(time_to_first_rec);
 
-  if(noDC==0) audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
-  //audio_bypass_adc_hp(); // this will not lower the DC offset voltage, lowest noise
   
   mode = 0;
 
   // create first folder to hold data
   folderMonth = -1;  //set to -1 so when first file made will create directory
+  logFileHeader();
 }
 
 //
@@ -374,6 +373,11 @@ void loop() {
         if (camFlag)  cam_start();
       }
       if(t >= startTime){      // time to start?
+        
+        if(noDC==0) {
+          audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
+          noDC = -1;
+        }
         Serial.println("Record Start.");
         
         stopTime = startTime + rec_dur;
@@ -639,7 +643,7 @@ void FileInit()
         logFile.println(whistleCount); 
       }
       logFile.print(',');
-      logFile.print(gainSetting); 
+      logFile.print(gainDb); 
       logFile.print(',');
       logFile.println(voltage); 
       if(voltage < 3.0){
@@ -697,6 +701,13 @@ void FileInit()
 
   Serial.print("Buffers: ");
   Serial.println(nbufs_per_file);
+}
+
+void logFileHeader(){
+  if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+      logFile.println("filename, ID, gain (dB), Voltage");
+      logFile.close();
+  }
 }
 
 void checkSD(){
