@@ -437,10 +437,10 @@ bool audio_enable(void)
   
   delay(400);
   //chipWrite(CHIP_LINE_OUT_VOL, 0x1D1D); // default approx 1.3 volts peak-to-peak
-  chipWrite(CHIP_LINE_OUT_VOL, 0x1919); // default approx 1.3 volts peak-to-peak
+  chipWrite(CHIP_LINE_OUT_VOL, 0x1919); // default approx 1.3 volts peak-to-peak; higher codes have more attenuation
   chipWrite(CHIP_CLK_CTRL, 0x0004);  // 44.1 kHz, 256*Fs
   chipWrite(CHIP_I2S_CTRL, 0x0130); // SCLK=32*Fs, 16bit, I2S format
-  // default signal routing is ok?
+  // default signal routing is ok?D
   
   //chipWrite(CHIP_SSS_CTRL, 0x0010); // ADC->I2S, I2S->DAC
   chipWrite(CHIP_SSS_CTRL, 0x0000); // ADC->I2S, ADC->DAC

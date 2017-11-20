@@ -39,8 +39,8 @@ Adafruit_SSD1306 display(OLED_RESET);
 //
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
-long rec_dur = 30;
-long rec_int = 10;
+long rec_dur = 60;
+long rec_int = 60;
 int fftFlag = 0;
 int roundSeconds = 60;//modulo to nearest x seconds
 float hydroCal = -180.0;
@@ -289,6 +289,7 @@ void setup() {
   fft256_1.averageTogether(1); // number of FFTs to average together
 
   manualSettings();
+  setGain();
   SdFile::dateTimeCallback(file_date_time);
   
   // disable buttons; not using any more
@@ -759,28 +760,30 @@ void AudioInit(){
 
  // Instead of using audio library enable; do custom so only power up what is needed in sgtl5000_LHI
   audio_enable();
- 
-  //sgtl5000_1.inputSelect(myInput);
-  //sgtl5000_1.volume(0.0);
-  sgtl5000_1.lineInLevel(gainSetting);  //default = 4
+  setGain();
+
+}
+
+void setGain(){
+    sgtl5000_1.lineInLevel(gainSetting);  //default = 4
   // CHIP_ANA_ADC_CTRL
-// Actual measured full-scale peak-to-peak sine wave input for max signal
-//  0: 3.12 Volts p-p
-//  1: 2.63 Volts p-p
-//  2: 2.22 Volts p-p
-//  3: 1.87 Volts p-p
-//  4: 1.58 Volts p-p (0.79 Vpeak)
-//  5: 1.33 Volts p-p
-//  6: 1.11 Volts p-p
-//  7: 0.94 Volts p-p
-//  8: 0.79 Volts p-p (+8.06 dB)
-//  9: 0.67 Volts p-p
-// 10: 0.56 Volts p-p
-// 11: 0.48 Volts p-p
-// 12: 0.40 Volts p-p
-// 13: 0.34 Volts p-p
-// 14: 0.29 Volts p-p
-// 15: 0.24 Volts p-p
+  // Actual measured full-scale peak-to-peak sine wave input for max signal
+  //  0: 3.12 Volts p-p
+  //  1: 2.63 Volts p-p
+  //  2: 2.22 Volts p-p
+  //  3: 1.87 Volts p-p
+  //  4: 1.58 Volts p-p (0.79 Vpeak)
+  //  5: 1.33 Volts p-p
+  //  6: 1.11 Volts p-p
+  //  7: 0.94 Volts p-p
+  //  8: 0.79 Volts p-p (+8.06 dB)
+  //  9: 0.67 Volts p-p
+  // 10: 0.56 Volts p-p
+  // 11: 0.48 Volts p-p
+  // 12: 0.40 Volts p-p
+  // 13: 0.34 Volts p-p
+  // 14: 0.29 Volts p-p
+  // 15: 0.24 Volts p-p
   //sgtl5000_1.autoVolumeDisable();
  // sgtl5000_1.audioProcessorDisable();
   switch(gainSetting){
