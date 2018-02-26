@@ -7,17 +7,19 @@ time_t autoStartTime;
 #define noSet 0
 #define setRecDur 1
 #define setRecSleep 2
-#define setYear 3
-#define setMonth 4
-#define setDay 5
-#define setHour 6
-#define setMinute 7
-#define setSecond 8
-#define setMode 9
-#define setStartHour 10
-#define setStartMinute 11
-#define setEndHour 12
-#define setEndMinute 13
+#define setBatPack 3
+#define setYear 4
+#define setMonth 5
+#define setDay 6
+#define setHour 7
+#define setMinute 8
+#define setSecond 9
+#define setMode 10
+#define setStartHour 11
+#define setStartMinute 12
+#define setEndHour 13
+#define setEndMinute 14
+
 
 void manualSettings(){
   boolean startRec = 0, startUp, startDown;
@@ -103,7 +105,7 @@ void manualSettings(){
       while(digitalRead(SELECT)==0){ // wait until let go of button
         delay(10);
       }
-      if((recMode==MODE_NORMAL & curSetting>9) | (recMode==MODE_DIEL & curSetting>13)) curSetting = 0;
+      if((recMode==MODE_NORMAL & curSetting>10) | (recMode==MODE_DIEL & curSetting>14)) curSetting = 0;
     }
 
     cDisplay();
@@ -143,6 +145,11 @@ void manualSettings(){
         display.print("Slp:");
         display.print(rec_int);
         display.println("s");
+        break;
+      case setBatPack:
+        nBatPacks = updateVal(nBatPacks, 1, 8);
+        display.print("Batt:");
+        display.println(nBatPacks);
         break;
       case setYear:
         oldYear = year(t);
@@ -290,7 +297,9 @@ void displaySettings(){
   }
   display.print("Sleep:");
   display.print(rec_int);
-  display.println("s");
+  display.print("s");
+  display.print(" B:");
+  display.println(nBatPacks);
   if (recMode==MODE_DIEL) {
     display.print("Active: ");
     printZero(startHour);
@@ -331,7 +340,7 @@ void displaySettings(){
   float sleepFraction = 1 - recFraction;
   float avgCurrentDraw = (recDraw * recFraction) + (mAmpSleep * sleepFraction);
 
-  uint32_t powerSeconds = uint32_t (3600.0 * (mAhTotal / avgCurrentDraw));
+  uint32_t powerSeconds = uint32_t (3600.0 * (nBatPacks * mAhPerBat / avgCurrentDraw));
 
   for(int n=0; n<4; n++){
     filesPerCard[n] = 0;
@@ -408,6 +417,12 @@ void readEEPROM(){
   endHour = EEPROM.read(10);
   endMinute = EEPROM.read(11);
   recMode = EEPROM.read(12);
+  
+  byte newBatPacks = EEPROM.read(13);
+  if(newBatPacks>0)
+  {
+    nBatPacks = newBatPacks;
+  }
 }
 
 union {
@@ -439,6 +454,7 @@ void writeEEPROM(){
   EEPROM.write(10, endHour); //byte
   EEPROM.write(11, endMinute); //byte
   EEPROM.write(12, recMode); //byte
+  EEPROM.write(13, nBatPacks); //byte
 }
  
 void printDigits(int digits){

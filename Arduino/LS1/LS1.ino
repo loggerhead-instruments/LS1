@@ -37,6 +37,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
+char codeVersion[14] = "2018-02-26";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 long rec_dur = 60;
@@ -144,7 +145,8 @@ boolean settingsChanged = 0;
 float mAmpRec = 70;
 float mAmpSleep = 4;
 float mAmpCam = 600;
-float mAhTotal = 12000.0 * 4.0; // assume 12Ah per battery pack
+byte nBatPacks = 4;
+float mAhPerBat = 12000.0; // assume 12Ah per battery pack
 
 long file_count;
 char filename[25];
@@ -270,6 +272,12 @@ void setup() {
   //setSyncProvider(getTeensy3Time); //use Teensy RTC to keep time
   t = getTeensy3Time();
   if (t < 1451606400) Teensy3Clock.set(1451606400);
+  Serial.println("Clock Check");
+  t = getTeensy3Time();
+  Serial.println(t);
+  delay(1000);
+  t = getTeensy3Time();
+  Serial.println(t);
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
   delay(100);
@@ -646,7 +654,9 @@ void FileInit()
       logFile.print(',');
       logFile.print(gainDb); 
       logFile.print(',');
-      logFile.println(voltage); 
+      logFile.print(voltage); 
+      logFile.print(',');
+      logFile.println(codeVersion);
       if(voltage < 3.0){
         logFile.println("Stopping because Voltage less than 3.0 V");
         logFile.close();  
@@ -706,7 +716,7 @@ void FileInit()
 
 void logFileHeader(){
   if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
-      logFile.println("filename, ID, gain (dB), Voltage");
+      logFile.println("filename, ID, gain (dB), Voltage, Version");
       logFile.close();
   }
 }
