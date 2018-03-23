@@ -37,14 +37,14 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-char codeVersion[14] = "2018-02-26";
+char codeVersion[14] = "2018-03-23";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 0;
+int camFlag = 1;
 long rec_dur = 60;
 long rec_int = 60;
 int fftFlag = 0;
 int roundSeconds = 60;//modulo to nearest x seconds
-float hydroCal = -180.0;
+float hydroCal = -170.0;
 int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
 int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset
 //
@@ -519,7 +519,7 @@ void loop() {
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
             if (printDiags) Serial.println("Shutting bits down");
             digitalWrite(hydroPowPin, LOW); //hydrophone off
-            cam_off(); //camera off
+            if(camFlag) cam_off(); //camera off
             if (printDiags) Serial.println("hydrophone off");
             audio_power_down();
             if (printDiags) Serial.println("audio power down");
@@ -541,12 +541,12 @@ void loop() {
             
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
    
-            cam_wake();
+            if(camFlag) cam_wake();
             audio_power_up();
             //sdInit();  //reinit SD because voltage can drop in hibernate
          }
          else{
-          cam_stop();
+          if(camFlag) cam_stop();
          }
          
         //digitalWrite(displayPow, HIGH); //start display up on wake
@@ -659,11 +659,22 @@ void FileInit()
       logFile.println(codeVersion);
       if(voltage < 3.0){
         logFile.println("Stopping because Voltage less than 3.0 V");
-        logFile.close();  
-        // low voltage hang but keep checking voltage
-        while(readVoltage() < 3.0){
-            delay(30000);
+        if (camFlag){
+          cam_off();
+          camFlag = 0;
+          logFile.println("Camera off.");
+          delay(100);
         }
+        logFile.close();  
+       
+        // low voltage hang but keep checking voltage
+        while(readVoltage() < 3.2){
+          digitalWrite(hydroPowPin, LOW);
+          alarm.setAlarm(0, 0, 20); // sleep 20 seconds
+          Snooze.sleep(config_teensy32);
+          delay(10);
+        }
+        digitalWrite(hydroPowPin, HIGH);
       }
       logFile.close();
    }
@@ -923,7 +934,7 @@ void cam_stop(){
 
 void cam_off() {
   digitalWrite(CAM_SW, HIGH);
-  delay(3000); //power down camera (if still on)
+  delay(3000);
   digitalWrite(CAM_SW, LOW);  
   digitalWrite(briteLED, LOW);    
   CAMON = 0;

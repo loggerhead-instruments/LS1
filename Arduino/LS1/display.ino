@@ -370,14 +370,10 @@ void displaySettings(){
   }
 
   if(camFlag){
-    display.setCursor(0,36);
-    display.print("Camera Enabled");
+    display.setCursor(120,18);
+    display.print("C");
   }
-  
-//  if(camFlag){
-//    display.setCursor(70, 18);
-//    display.print("Cam On");
-//  }
+ 
 }
 
 void displayClock(time_t t, int loc, boolean showSeconds){
