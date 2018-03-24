@@ -657,15 +657,15 @@ void FileInit()
       logFile.print(voltage); 
       logFile.print(',');
       logFile.println(codeVersion);
-      if(voltage < 3.2){
+      if(voltage < 3.1){
         if (camFlag){
           cam_off();
           camFlag = 0;
           logFile.println("Camera off.");
         }
       }
-      if(voltage < 3.1){
-        logFile.println("Stopping because Voltage less than 3.1 V");
+      if(voltage < 3.0){
+        logFile.println("Stopping because Voltage less than 3.0 V");
         logFile.close();  
        
         // low voltage hang but keep checking voltage
