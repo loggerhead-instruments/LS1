@@ -657,14 +657,15 @@ void FileInit()
       logFile.print(voltage); 
       logFile.print(',');
       logFile.println(codeVersion);
-      if(voltage < 3.0){
-        logFile.println("Stopping because Voltage less than 3.0 V");
+      if(voltage < 3.2){
         if (camFlag){
           cam_off();
           camFlag = 0;
           logFile.println("Camera off.");
-          delay(100);
         }
+      }
+      if(voltage < 3.1){
+        logFile.println("Stopping because Voltage less than 3.1 V");
         logFile.close();  
        
         // low voltage hang but keep checking voltage
@@ -899,11 +900,18 @@ void read_myID() {
 
 float readVoltage(){
    float  voltage = 0;
-   for(int n = 0; n<8; n++){
-    voltage += (float) analogRead(vSense) / 1024.0;
-    delay(2);
+   float vDivider = 1.9; //when using 3.3 V ref R9 100K
+   float fudgeFactor = 0.85;
+   //float vDivider = 4.5;  // when using 1.2 V ref R9 301K
+   float vRef = 3.3;
+   pinMode(vSense, INPUT);  // get ready to read voltage
+   if (vRef==1.2) analogReference(INTERNAL); //1.2V ref more stable than 3.3 according to PJRC
+   int navg = 32;
+   for(int n = 0; n<navg; n++){
+    voltage += (float) analogRead(vSense);
    }
-   voltage = 5.9 * voltage / 8.0;   //fudging scaling based on actual measurements; shoud be max of 3.3V at 1023
+   voltage = fudgeFactor * vDivider * vRef * voltage / 1024.0 / navg;  
+   pinMode(vSense, OUTPUT);  // done reading voltage
    return voltage;
 }
 
