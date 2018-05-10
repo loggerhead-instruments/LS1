@@ -2,7 +2,7 @@
 // LS1 acoustic recorder
 //
 // Loggerhead Instruments
-// 2017
+// 2017, 2018
 // David Mann
 // 
 // Modified from PJRC audio code and Snap code
@@ -37,9 +37,9 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-char codeVersion[14] = "2018-03-23";
+char codeVersion[14] = "2018-05-10";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 1;
+int camFlag = 0;
 long rec_dur = 60;
 long rec_int = 60;
 int fftFlag = 0;
