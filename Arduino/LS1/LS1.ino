@@ -39,7 +39,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 //
 char codeVersion[14] = "2018-07-19";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 1;
+int camFlag = 0;
 long rec_dur = 60;
 long rec_int = 60;
 int fftFlag = 0;
