@@ -37,7 +37,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-char codeVersion[14] = "2018-05-10";
+char codeVersion[14] = "2018-07-19";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 long rec_dur = 60;
@@ -299,14 +299,6 @@ void setup() {
   manualSettings();
   setGain();
   SdFile::dateTimeCallback(file_date_time);
-  
-  // disable buttons; not using any more
-  digitalWrite(UP, LOW);
-  digitalWrite(DOWN, LOW);
-  digitalWrite(SELECT, LOW);
-  pinMode(UP, OUTPUT);
-  pinMode(DOWN, OUTPUT);
-  pinMode(SELECT, OUTPUT);
   
   cDisplay();
   
