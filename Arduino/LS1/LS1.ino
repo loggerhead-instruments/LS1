@@ -38,7 +38,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 //*********************************************************
 //
 char codeVersion[14] = "2018-07-31";
-static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
+static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 1;
 long rec_dur = 60;
 long rec_int = 60;
@@ -139,7 +139,7 @@ int buf_count;
 long nbufs_per_file;
 boolean settingsChanged = 0;
 
-float mAmpRec = 60;
+float mAmpRec = 50;
 float mAmpSleep = 3;
 float mAmpCam = 600;
 byte nBatPacks = 4;
@@ -426,6 +426,7 @@ void loop() {
       }
     }
   }
+  asm("wfi"); // reduce power between interrupts
 }
 
 void startRecording() {
