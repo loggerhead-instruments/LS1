@@ -42,7 +42,6 @@ static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostic
 int camFlag = 1;
 long rec_dur = 60;
 long rec_int = 60;
-int fftFlag = 0;
 int roundSeconds = 60;//modulo to nearest x seconds
 float hydroCal = -170.0;
 int wakeahead = 20;  //wake from snooze to give hydrophone and camera time to power up
@@ -64,10 +63,8 @@ unsigned long baud = 115200;
 
 // GUItool: begin automatically generated code
 AudioInputI2S            i2s2;           //xy=105,63
-AudioAnalyzeFFT256       fft256_1; 
 AudioRecordQueue         queue1;         //xy=281,63
 AudioConnection          patchCord1(i2s2, 0, queue1, 0);
-AudioConnection          patchCord2(i2s2, 0, fft256_1, 0);
 AudioControlSGTL5000     sgtl5000_1;     //xy=265,212
 // GUItool: end automatically generated code
 
@@ -142,8 +139,8 @@ int buf_count;
 long nbufs_per_file;
 boolean settingsChanged = 0;
 
-float mAmpRec = 70;
-float mAmpSleep = 4;
+float mAmpRec = 60;
+float mAmpSleep = 3;
 float mAmpCam = 600;
 byte nBatPacks = 4;
 float mAhPerBat = 12000.0; // assume 12Ah per battery pack
@@ -181,43 +178,10 @@ unsigned int rms;
 
 unsigned char prev_dtr = 0;
 
-// define bands to measure acoustic signals
-int fftPoints = 256; // 5.8 ms at 44.1 kHz
-float binwidth = audio_srate / fftPoints; //256 point FFT; = 172.3 Hz for 44.1kHz
-float fftDurationMs = 1000.0 / binwidth;
-long fftCount;
-float meanBand[4]; // mean band values
-int bandLow[4]; // band low frequencies
-int bandHigh[4];
-int nBins[4]; // number of FFT bins in each band
-int whistleCount = 0;
-int whistleLow = (int) 5000.0 / binwidth; // low frequency bin to start looking for whistles
-int whistleHigh = (int) 16000.0 / binwidth; // high frequency bin to stop looking for whistles
-int oldPeakBin; //for keeping track of peak frequency
-int whistleDelta = 500.0 / binwidth;  // adajcent bins need to be within x Hz of each other to add to runLength
-int runLength = 0;
-int minRunLength = 300.0 / fftDurationMs; // minimium run length to count as whistle
-int fmThreshold = (int) 1000.0 / binwidth; // candidate whistle must cover this number of bins
-int minPeakBin; // minimum frequency in a run length use to make sure whistle crosses enough bins
-int maxPeakBin; // maximum frequency in a run length use to make sure whistle crosses enough bins
-String dataPacket; // data packed for Particle transmission after each file
-
 float gainDb;
 
 void setup() {
   read_myID();
-
-  bandLow[0] = 1; // start at 172 Hz to eliminate wave noise
-  bandHigh[0] = (int) 1000 / binwidth;
-  bandLow[1] = bandHigh[0];
-  bandHigh[1] = (int) 2000 / binwidth;
-  bandLow[2] = (int) bandHigh[1];
-  bandHigh[2] = (int) 5000 / binwidth;
-  bandLow[3] = bandHigh[2];
-  bandHigh[3] = (int) 20000 / binwidth;
-  for(int i=0; i<4; i++){
-    nBins[i] = bandHigh[i] - bandLow[i];
-  }
 
   chipSelect[0] = CS1;
   chipSelect[1] = CS2;
@@ -228,21 +192,6 @@ void setup() {
   HWSERIAL.begin(baud);
   delay(500);
 
-  if(printDiags){
-    Serial.print("binwidth: ");
-    Serial.println(binwidth);
-    Serial.print("FFT duration (ms): ");
-    Serial.println(fftDurationMs);
-    Serial.print("minRunLength: ");
-    Serial.println(minRunLength);
-    Serial.print("whistleDelta: ");
-    Serial.println(whistleDelta);
-    Serial.print("Whistle Low Freq Bin: ");
-    Serial.println(whistleLow);
-    Serial.print("Whistle High Freq Bin: ");
-    Serial.println(whistleHigh);
-  }
-  
   Wire.begin();
 
   pinMode(hydroPowPin, OUTPUT);
@@ -294,7 +243,6 @@ void setup() {
   // uses this memory to buffer incoming audio.
   AudioMemory(100);
   AudioInit(); // this calls Wire.begin() in control_sgtl5000.cpp
-  fft256_1.averageTogether(1); // number of FFTs to average together
 
   manualSettings();
   setGain();
@@ -392,15 +340,7 @@ void loop() {
         Serial.print("Next Start:");
         printTime(startTime);
 
-//        cDisplay();
-//        display.println("Rec");
-//        display.setTextSize(1);
-//        display.print("Stop Time: ");
-//        displayClock(stopTime, 30);
-//        display.display();
-
         mode = 1;
-        fftCount = 0;
   
         display.ssd1306_command(SSD1306_DISPLAYOFF); // turn off display during recording
         startRecording();
@@ -432,20 +372,16 @@ void loop() {
     }
       
     if(buf_count >= nbufs_per_file){       // time to stop?
-      if(fftFlag) summarizeSignals();
-      
       if(rec_int == 0){
         frec.close();
         checkSD();
         FileInit();  // make a new file
         buf_count = 0;
-        if(fftFlag) resetSignals();
       }
       else{
         stopRecording();
         
         checkSD();
-        if(fftFlag) resetSignals();
         
         long ss = startTime - getTeensy3Time() - wakeahead;
         if (ss<0) ss=0;
@@ -575,21 +511,7 @@ void FileInit()
       for(int n=0; n<8; n++){
         logFile.print(myID[n]);
       }
-      if(fftFlag){
-        for (int i=0; i<4; i++){
-          logFile.print(',');
-          if(meanBand[i]>0.00001){
-            float spectrumLevel = 20*log10(meanBand[i] / fftCount) - (10 * log10(binwidth));
-            spectrumLevel = spectrumLevel - hydroCal - gainDb;
-            logFile.print(spectrumLevel);
-          }
-           else{
-            logFile.print("-100");
-           }
-        }
-        logFile.print(',');
-        logFile.println(whistleCount); 
-      }
+
       logFile.print(',');
       logFile.print(gainDb); 
       logFile.print(',');
@@ -927,31 +849,3 @@ void checkDielTime(){
     }
   }
 }
-
-// send current values to display or cell
-void summarizeSignals(){
-  Serial.println("Mean bands");
-  for (int i=0; i<4; i++){
-    if(meanBand[i]>0.00001){
-      float spectrumLevel = 20*log10(meanBand[i] / fftCount) - (10 * log10(binwidth));
-      spectrumLevel = spectrumLevel - hydroCal - gainDb;
-      Serial.println(spectrumLevel);
-    }
-     else{
-      Serial.println(meanBand[i] / fftCount);
-     }
-  }
-  Serial.print("Whistles: ");
-  Serial.println(whistleCount);
-}
-
-void resetSignals(){
-  for (int i=0; i<4; i++){
-    meanBand[i] = 0;
-  }
-  whistleCount = 0;
-  fftCount = 0;
-  minPeakBin = 0;
-  maxPeakBin = 0;
-}
-
