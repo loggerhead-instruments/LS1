@@ -146,8 +146,8 @@ byte nBatPacks = 4;
 float mAhPerBat = 12000.0; // assume 12Ah per battery pack
 
 long file_count;
-char filename[25];
-char dirname[7];
+char filename[60];
+char dirname[20];
 int folderMonth;
 //SnoozeBlock snooze_config;
 SnoozeAlarm alarm;
@@ -487,13 +487,16 @@ void FileInit()
     sd.mkdir(dirname);
    }
    pinMode(vSense, INPUT);  // get ready to read voltage
+   sd.chdir(dirname);
 
    // get new filename
    int filenameIncrement = 0;
-   sprintf(filename,"%s/%02d%02d%02d%02d.wav", dirname, day(t), hour(t), minute(t), second(t));  //filename is DDHHMM
+   //sprintf(filename,"%s/%02d%02d%02d%02d.wav", dirname, day(t), hour(t), minute(t), second(t));  //filename is DDHHMM
+   sprintf(filename,"%04d%02d%02dT%02d%02d%02d.wav", year(t), month(t), day(t), hour(t), minute(t), second(t));  //filename is DDHHMMSS
+
    while (sd.exists(filename)){
     filenameIncrement++;
-    sprintf(filename,"%s/%02d%02d%02d%02d_%d.wav", dirname, day(t), hour(t), minute(t), second(t), filenameIncrement);  //filename is DDHHMM
+    sprintf(filename,"%04d%02d%02dT%02d%02d%02d_%d.wav", year(t), month(t), day(t), hour(t), minute(t), second(t), filenameIncrement);  //filename is DDHHMM
    }
 
    // log file
@@ -501,6 +504,7 @@ void FileInit()
 
    float voltage = readVoltage();
    File logFile;
+   sd.chdir(); // only to be sure to start from root
    if(logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
       logFile.print(filename);
       logFile.print(',');
@@ -540,7 +544,8 @@ void FileInit()
     if(printDiags) Serial.print("Log open fail.");
     // resetFunc();
    }
-    
+
+   sd.chdir(dirname);
    frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
    Serial.println(filename);
    
