@@ -37,9 +37,9 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-char codeVersion[14] = "2018-07-19";
+char codeVersion[14] = "2018-07-31";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 0;
+int camFlag = 1;
 long rec_dur = 60;
 long rec_int = 60;
 int fftFlag = 0;
@@ -412,77 +412,24 @@ void loop() {
   if (mode == 1) {
     continueRecording();  // download data  
 
-    //
-    // Automated signal processing
-    //
-    if(fftFlag & fft256_1.available()){
-      
-      // whistle detection
-      float maxV = fft256_1.read(whistleLow);
-      float newV;
-      int peakBin;
-
-      // find peak frequency
-      for(int i=whistleLow+1; i<whistleHigh; i++){
-        newV = fft256_1.read(i);
-        if (newV > maxV){
-          maxV = newV;
-          peakBin = i;
-        }
-      }
-
-      // track minimum and maximum peakBins during run
-      if((peakBin < minPeakBin) | (minPeakBin==0)) minPeakBin = peakBin; 
-          if((peakBin > maxPeakBin) | (maxPeakBin==0)) maxPeakBin = peakBin;
-
-      // increment runLength if new peak is withing whistleDelta of old peak
-      if(abs(peakBin - oldPeakBin) < whistleDelta){
-        runLength += 1;
-      }
-      else{  // end of run, check if long enough and covered enough frequency bins
-        if((runLength >= minRunLength) & (maxPeakBin - minPeakBin > fmThreshold)) {
-          if (printDiags){
-            Serial.print(runLength * fftDurationMs);
-            Serial.print(" ");
-          }
-          whistleCount++;
-        }
-        runLength = 1;
-      }
-      oldPeakBin = peakBin;
-
-      // calculate band level noise
-      fftCount += 1;  // counter to divide meanBand by before sending to cell
-      for(int n=0; n<4; n++){
-        for(int i=bandLow[n]; i<bandHigh[n]; i++){
-          meanBand[n] += (fft256_1.read(i) / nBins[n]); // accumulate across band
-        }
-      }
+    if(digitalRead(UP)==0 & digitalRead(DOWN)==0){
+      // stop recording
+      queue1.end();
+      // update wav file header
+      wav_hdr.rLen = 36 + buf_count * 256 * 2;
+      wav_hdr.dLen = buf_count * 256 * 2;
+      frec.seek(0);
+      frec.write((uint8_t *)&wav_hdr, 44);
+      frec.close();
+      display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
+      delay(100);
+      cDisplay();
+      display.println("Stopped");
+      display.setTextSize(1);
+      display.println("Safe to turn off");
+      display.display();
+      while(1);
     }
-    //
-    // End audomated signal processing
-    //
-
-    /*
-     // update clock while recording
-      recLoopCount++;
-      if(recLoopCount>50){
-        recLoopCount = 0;
-        t = getTeensy3Time();
-        cDisplay();
-        if(rec_int > 0) {
-          display.println("Rec");
-          displayClock(stopTime, 20);
-        }
-        else{
-          display.println("Rec Contin");
-          display.setTextSize(1);
-          display.println(filename);
-        }
-        displayClock(t, BOTTOM);
-        display.display();
-      }
-      */
       
     if(buf_count >= nbufs_per_file){       // time to stop?
       if(fftFlag) summarizeSignals();
