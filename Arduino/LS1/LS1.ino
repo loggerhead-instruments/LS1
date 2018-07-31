@@ -209,12 +209,9 @@ void setup() {
   digitalWrite(briteLED, LOW);
   
   //setup display and controls
-  pinMode(UP, INPUT);
-  pinMode(DOWN, INPUT);
-  pinMode(SELECT, INPUT);
-  digitalWrite(UP, HIGH);
-  digitalWrite(DOWN, HIGH);
-  digitalWrite(SELECT, HIGH);
+  pinMode(UP, INPUT_PULLUP);
+  pinMode(DOWN, INPUT_PULLUP);
+  pinMode(SELECT, INPUT_PULLUP);
 
   delay(500);    
 
@@ -284,8 +281,6 @@ void setup() {
   long time_to_first_rec = startTime - t;
   Serial.print("Time to first record ");
   Serial.println(time_to_first_rec);
-
-  
   mode = 0;
 
   // create first folder to hold data
@@ -457,7 +452,7 @@ void continueRecording() {
       
     buf_count += 1;
     audioIntervalCount += 1;
-//    
+    
 //    if(printDiags){
 //      Serial.print(".");
 //   }
