@@ -37,7 +37,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 //*********************************************************
 //
-char codeVersion[14] = "2018-07-31";
+char codeVersion[14] = "2018-08-01";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 1;
 long rec_dur = 60;
@@ -356,6 +356,7 @@ void loop() {
       frec.seek(0);
       frec.write((uint8_t *)&wav_hdr, 44);
       frec.close();
+      if(camFlag) cam_off(); //camera off
       display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
       delay(100);
       cDisplay();
