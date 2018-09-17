@@ -19,7 +19,7 @@
 // Optionally uses SdFS from Bill Greiman https://github.com/greiman/SdFs; but has higher current draw in sleep
 
 char codeVersion[12] = "2018-09-17";
-static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
+static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
@@ -212,22 +212,18 @@ void setup() {
   Serial.begin(baud);
   delay(500);
 
-  Serial.println(RTC_TSR);
-  Serial.println(RTC_TSR);
-  Serial.println(RTC_TSR);
-
   RTC_CR = 0; // disable RTC
   delay(100);
-  Serial.println(RTC_CR,HEX);
+  //Serial.println(RTC_CR,HEX);
   // change capacitance to 26 pF (12.5 pF load capacitance)
   RTC_CR = RTC_CR_SC16P | RTC_CR_SC8P | RTC_CR_SC2P; 
   delay(100);
   RTC_CR = RTC_CR_SC16P | RTC_CR_SC8P | RTC_CR_SC2P | RTC_CR_OSCE;
   delay(100);
 
-  Serial.println(RTC_SR,HEX);
-  Serial.println(RTC_CR,HEX);
-  Serial.println(RTC_LR,HEX);
+//  Serial.println(RTC_SR,HEX);
+//  Serial.println(RTC_CR,HEX);
+//  Serial.println(RTC_LR,HEX);
 
   Serial.println(RTC_TSR);
   delay(1000);
@@ -355,6 +351,7 @@ void setup() {
 
   // create first folder to hold data
   folderMonth = -1;  //set to -1 so when first file made will create directory
+  checkSD();
 }
 
 //
@@ -791,7 +788,7 @@ float readVoltage(){
 }
 
 void checkSD(){
-  filesPerCard[currentCard] -= 1;
+  if (filesPerCard[currentCard] > 0) filesPerCard[currentCard] -= 1;
 
   if(printDiags){
     Serial.print("Files per card: ");
@@ -799,7 +796,7 @@ void checkSD(){
   }
   
   // find next card with files available
-  while(filesPerCard[currentCard] == 0){
+  while(filesPerCard[currentCard] <= 0){
     currentCard += 1;
     newCard = 1;
     if(currentCard == 4)  // all cards full

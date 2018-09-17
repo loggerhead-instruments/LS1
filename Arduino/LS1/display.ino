@@ -71,12 +71,13 @@ void manualSettings(){
         float fs = 0.000512 * volFree * sd.vol()->blocksPerCluster();
         uint32_t freeSpace = (uint32_t) fs;
         uint32_t volumeMB = uint32_t ( 0.000512 * (float) sd.card()->cardSize());
-        Serial.print("Free space (MB): ");
-        Serial.println((uint32_t) freeSpace);
-
+        
         if (freeSpace < 200) freeMB[n] = 0;
         else
           freeMB[n] = freeSpace - 200; // take off 200 MB to be safe
+
+        Serial.print("Free space (MB): ");
+        Serial.println((uint32_t) freeMB[n]);
         
         display.print(freeMB[n]);
         display.print("/");
@@ -387,14 +388,14 @@ void displaySettings(){
       filesPerCard[n] = (uint32_t) floor(freeMB[n] / fileMB);
     }
     totalRecSeconds += (filesPerCard[n] * rec_dur);
-
 //    Serial.print(" ");
-//    Serial.print(freeMB[n]);
+//    Serial.print(filesPerCard[n]);
     //display.setCursor(60, 18 + (n*8));  // display file count for debugging
     //display.print(n+1); display.print(":");display.print(filesPerCard[n]); 
   }
 //    Serial.print(" ");
 //    Serial.println(totalRecSeconds); Serial.print(" ");
+//  Serial.println();
 
 
   float totalSecondsMemory = totalRecSeconds / recFraction;
