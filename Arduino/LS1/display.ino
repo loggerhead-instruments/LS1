@@ -1,24 +1,45 @@
+float mAmpRec = 45;  // actual about 43 mA
+float mAmpSleep = 2.8; // actual about 2.6 mA
+float mAmpCam = 600;
+byte nBatPacks = 4;
+float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries should be 14000
+
+csd_t m_csd;
+
+
 /* DISPLAY FUNCTIONS
  *  
  */
 
 time_t autoStartTime;
+ 
+void printDigits(int digits){
+  // utility function for digital clock display: prints preceding colon and leading 0
+  display.print(":");
+  printZero(digits);
+  display.print(digits);
+}
+
+void printZero(int val){
+  if(val<10) display.print('0');
+}
 
 #define noSet 0
 #define setRecDur 1
 #define setRecSleep 2
-#define setBatPack 3
-#define setYear 4
-#define setMonth 5
-#define setDay 6
-#define setHour 7
-#define setMinute 8
-#define setSecond 9
-#define setMode 10
-#define setStartHour 11
-#define setStartMinute 12
-#define setEndHour 13
-#define setEndMinute 14
+#define setYear 3
+#define setMonth 4
+#define setDay 5
+#define setHour 6
+#define setMinute 7
+#define setSecond 8
+#define setFsamp 9
+#define setBatPack 10
+#define setMode 11
+#define setStartHour 12
+#define setStartMinute 13
+#define setEndHour 14
+#define setEndMinute 15
 
 
 void manualSettings(){
@@ -26,6 +47,7 @@ void manualSettings(){
   readEEPROM();
 
   autoStartTime = getTeensy3Time();
+
 // get free space on cards
     cDisplay();
     display.print("LS1 Init");
@@ -80,6 +102,7 @@ void manualSettings(){
  
   LoadScript(); // secret settings accessible from card 1
   
+  
   // make sure settings valid (if EEPROM corrupted or not set yet)
   if (rec_dur < 0 | rec_dur>100000) rec_dur = 60;
   if (rec_int<0 | rec_int>100000) rec_int = 60;
@@ -88,11 +111,18 @@ void manualSettings(){
   if (endHour<0 | endHour>23) endHour = 0;
   if (endMinute<0 | endMinute>59) endMinute = 0;
   if (recMode<0 | recMode>1) recMode = 0;
+  if (isf<0 | isf>4) isf = I_SAMP; // change 3 to 4 to allow 192 kHz
 
-  delay(2000);
-  cDisplay();
-  display.display();
-  delay(600);
+//  // if LOG.CSV present, skip manual settings
+//  #if USE_SDFS==1
+//    FsFile logFile = sd.open("LOG.CSV");
+//  #else
+//    File logFile = sd.open("LOG.CSV");
+//  #endif
+//  if(logFile){
+//    startRec = 1;
+//    logFile.close();
+//  }
   
   while(startRec==0){
     static int curSetting = noSet;
@@ -105,8 +135,8 @@ void manualSettings(){
       while(digitalRead(SELECT)==0){ // wait until let go of button
         delay(10);
       }
-      if((recMode==MODE_NORMAL & curSetting>10) | (recMode==MODE_DIEL & curSetting>14)) curSetting = 0;
-    }
+      if((recMode==MODE_NORMAL & curSetting>11) | (recMode==MODE_DIEL & curSetting>15)) curSetting = 0;
+   }
 
     cDisplay();
 
@@ -121,8 +151,7 @@ void manualSettings(){
           autoStartTime = getTeensy3Time();  //reset autoStartTime
         }
         display.print("UP+DN->Rec"); 
-        
-         // Check for start recording
+        // Check for start recording
         startUp = digitalRead(UP);
         startDown = digitalRead(DOWN);
         if(startUp==0 & startDown==0) {
@@ -145,11 +174,6 @@ void manualSettings(){
         display.print("Slp:");
         display.print(rec_int);
         display.println("s");
-        break;
-      case setBatPack:
-        nBatPacks = updateVal(nBatPacks, 1, 8);
-        display.print("Batt:");
-        display.println(nBatPacks);
         break;
       case setYear:
         oldYear = year(t);
@@ -192,12 +216,21 @@ void manualSettings(){
         if(oldSecond!=newSecond) setTeensyTime(hour(t), minute(t), newSecond, day(t), month(t), year(t));
         display.print("Second:");
         display.print(second(getTeensy3Time()));
-        break;  
+        break;
+      case setFsamp:
+        isf = updateVal(isf, 0, 5);
+        display.printf("SF: %.1f",lhi_fsamps[isf]/1000.0f);
+        break;
       case setMode:
         display.print("Mode:");
         recMode = updateVal(recMode, 0, 1);
         if (recMode==MODE_NORMAL)  display.print("Norm");
         if (recMode==MODE_DIEL) display.print("Diel");
+        break;
+      case setBatPack:
+        nBatPacks = updateVal(nBatPacks, 1, 8);
+        display.print("Batt:");
+        display.println(nBatPacks);
         break;
       case setStartHour:
         startHour = updateVal(startHour, 0, 23);
@@ -225,7 +258,7 @@ void manualSettings(){
         break;
     }
     displaySettings();
-    displayClock(getTeensy3Time(), BOTTOM, 1);
+    displayClock(getTeensy3Time(), BOTTOM);
     display.display();
     delay(10);
   }
@@ -250,6 +283,7 @@ int updateVal(long curVal, long minVal, long maxVal){
   boolean downVal = digitalRead(DOWN);
   static int heldDown = 0;
   static int heldUp = 0;
+
   if(upVal==0){
     settingsChanged = 1;
     if (heldUp < 20) delay(200);
@@ -289,32 +323,22 @@ void displaySettings(){
 
   display.print("Rec:");
   display.print(rec_dur);
-  display.print("s ");
-  display.print(" Mode:");
-  if (recMode==MODE_NORMAL) display.println("Norm");
-  if (recMode==MODE_DIEL) {
-    display.println("Diel");
-  }
+  display.println("s ");
+  
   display.print("Sleep:");
   display.print(rec_int);
-  display.print("s");
+  display.print("s  ");
+
   display.print(" B:");
   display.println(nBatPacks);
-  if (recMode==MODE_DIEL) {
-    display.print("Active: ");
-    printZero(startHour);
-    display.print(startHour);
-    printDigits(startMinute);
-    display.print("-");
-    printZero(endHour);
-    display.print(endHour);
-    printDigits(endMinute);
-    display.println();
-  }
+
+  display.printf("%.1f kHz\n",lhi_fsamps[isf]/1000.0f);
+
   display.setTextSize(1);
+
   uint32_t totalRecSeconds = 0;
 
-  float fileBytes = (2 * rec_dur * audio_srate) + 44;
+  float fileBytes = (2 * rec_dur * lhi_fsamps[isf]) + 44;
   float fileMB = (fileBytes + 32768) / 1000 / 1000; // add cluster size so don't underestimate fileMB
   float dielFraction = 1.0; //diel mode decreases time spent recording, increases time in sleep
   if(recMode==MODE_DIEL){
@@ -336,11 +360,25 @@ void displaySettings(){
   }
   
   float recDraw = mAmpRec + ((float) camFlag * mAmpCam);
-  float recFraction = (rec_dur * dielFraction) / (rec_dur + rec_int);
+  float recFraction = ((float) rec_dur * dielFraction) / (float) (rec_dur + rec_int);
   float sleepFraction = 1 - recFraction;
   float avgCurrentDraw = (recDraw * recFraction) + (mAmpSleep * sleepFraction);
+//
+//  Serial.print("Rec Fraction Sleep Fraction Avg Power:");
+//  Serial.print(rec_dur);
+//  Serial.print("  ");
+//  Serial.print(recFraction);
+//  Serial.print("  ");
+//  Serial.print(rec_int);
+//  Serial.print("  ");
+//  Serial.print(sleepFraction);
+//  Serial.print("  ");
+//  Serial.println(avgCurrentDraw);
 
   uint32_t powerSeconds = uint32_t (3600.0 * (nBatPacks * mAhPerBat / avgCurrentDraw));
+
+//  Serial.print("fileMB FreeMBCards totalRecSeconds: ");
+//  Serial.print(fileMB); Serial.print(" ");
 
   for(int n=0; n<4; n++){
     filesPerCard[n] = 0;
@@ -349,34 +387,35 @@ void displaySettings(){
       filesPerCard[n] = (uint32_t) floor(freeMB[n] / fileMB);
     }
     totalRecSeconds += (filesPerCard[n] * rec_dur);
+
+//    Serial.print(" ");
+//    Serial.print(freeMB[n]);
     //display.setCursor(60, 18 + (n*8));  // display file count for debugging
     //display.print(n+1); display.print(":");display.print(filesPerCard[n]); 
   }
+//    Serial.print(" ");
+//    Serial.println(totalRecSeconds); Serial.print(" ");
+
 
   float totalSecondsMemory = totalRecSeconds / recFraction;
   if(powerSeconds < totalSecondsMemory){
    // displayClock(getTeensy3Time() + powerSeconds, 45, 0);
-    display.setCursor(0, 48);
+    display.setCursor(0, 46);
     display.print("Battery Limit:");
     display.print(powerSeconds / 86400);
     display.print("d");
   }
   else{
   //  displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
-    display.setCursor(0, 48);
+    display.setCursor(0, 46);
     display.print("Memory Limit:");
     display.print(totalSecondsMemory / 86400);
     display.print("d");
   }
-
-  if(camFlag){
-    display.setCursor(120,18);
-    display.print("C");
-  }
- 
 }
 
-void displayClock(time_t t, int loc, boolean showSeconds){
+
+void displayClock(time_t t, int loc){
   display.setTextSize(1);
   display.setCursor(0,loc);
   display.print(year(t));
@@ -388,7 +427,7 @@ void displayClock(time_t t, int loc, boolean showSeconds){
   printZero(hour(t));
   display.print(hour(t));
   printDigits(minute(t));
-  if(showSeconds) printDigits(second(t));
+  printDigits(second(t));
 }
 
 void printTime(time_t t){
@@ -413,12 +452,13 @@ void readEEPROM(){
   endHour = EEPROM.read(10);
   endMinute = EEPROM.read(11);
   recMode = EEPROM.read(12);
-  
-  byte newBatPacks = EEPROM.read(13);
+  isf = EEPROM.read(13);
+  byte newBatPacks = EEPROM.read(14);
   if(newBatPacks>0)
   {
     nBatPacks = newBatPacks;
   }
+  
 }
 
 union {
@@ -450,16 +490,7 @@ void writeEEPROM(){
   EEPROM.write(10, endHour); //byte
   EEPROM.write(11, endMinute); //byte
   EEPROM.write(12, recMode); //byte
-  EEPROM.write(13, nBatPacks); //byte
-}
- 
-void printDigits(int digits){
-  // utility function for digital clock display: prints preceding colon and leading 0
-  display.print(":");
-  printZero(digits);
-  display.print(digits);
+  EEPROM.write(13, isf); //byte
+  EEPROM.write(14, nBatPacks); //byte
 }
 
-void printZero(int val){
-  if(val<10) display.print('0');
-}
