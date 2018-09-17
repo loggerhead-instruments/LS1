@@ -370,7 +370,13 @@ void loop() {
       t = getTeensy3Time();
       cDisplay();
       display.println("Next Start");
-      displayClock(startTime, 20);
+      display.setTextSize(1);
+      display.setCursor(0, 18);
+      display.print("Card:");
+      display.print(currentCard + 1);
+      display.print(" ");
+      display.print(filesPerCard[currentCard]);
+      displayClock(startTime, 40);
       displayClock(t, BOTTOM);
       display.display();
       //
@@ -433,6 +439,7 @@ void loop() {
     if(buf_count >= nbufs_per_file){       // time to stop?
       if(rec_int == 0){
         frec.close();
+        checkSD();
         FileInit();  // make a new file
         buf_count = 0;
         if(printDiags) {
@@ -442,6 +449,7 @@ void loop() {
       }
       else{
         stopRecording();
+        checkSD();
         long ss = startTime - getTeensy3Time() - wakeahead;
         if (ss<0) ss=0;
         snooze_hour = floor(ss/3600);
@@ -782,3 +790,36 @@ float readVoltage(){
    return voltage;
 }
 
+void checkSD(){
+  filesPerCard[currentCard] -= 1;
+
+  if(printDiags){
+    Serial.print("Files per card: ");
+    Serial.println(filesPerCard[currentCard]);
+  }
+  
+  // find next card with files available
+  while(filesPerCard[currentCard] == 0){
+    currentCard += 1;
+    newCard = 1;
+    if(currentCard == 4)  // all cards full
+    {
+      if(printDiags) Serial.println("All cards full");
+      while(1);
+    }
+
+  if(!sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50))){
+       if(printDiags){
+        Serial.print("Unable to access the SD card: ");
+        Serial.println(currentCard + 1);
+        }
+    }
+    else
+      break;
+  }
+
+  if(printDiags){
+    Serial.print("Current Card: ");
+    Serial.println(currentCard + 1);
+  }
+}
