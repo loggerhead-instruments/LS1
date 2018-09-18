@@ -6,8 +6,7 @@
 // David Mann
 
 // To Do:
-// Test diel record mode
-// LHC Camera control
+// Test Camera control
 
 // 
 // Modified from PJRC audio code
@@ -19,15 +18,16 @@
 // Optionally uses SdFS from Bill Greiman https://github.com/greiman/SdFs; but has higher current draw in sleep
 
 //*****************************************************************************************
-//
+
 char codeVersion[12] = "2018-09-18";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
-//#define USE_LONG_FILE_NAMES
+int roundSeconds = 10;//start time modulo to nearest roundSeconds
+int wakeahead = 5;  //wake from snooze to give hydrophone and camera time to power up
 
-//******************************************************************************************
+//*****************************************************************************************
 
 
 #include "LHI_record_queue.h"
@@ -159,7 +159,7 @@ float gainDb;
 int recMode = MODE_NORMAL;
 long rec_dur = 10;
 long rec_int = 30;
-int wakeahead = 5;  //wake from snooze to give hydrophone and camera time to power up
+
 int snooze_hour;
 int snooze_minute;
 int snooze_second;
@@ -240,15 +240,17 @@ void setup() {
   
   Wire.begin();
 
-  pinMode(hydroPowPin, OUTPUT);
   pinMode(vSense, INPUT);
   analogReference(DEFAULT);
-
+  
+  pinMode(hydroPowPin, OUTPUT);
   digitalWrite(hydroPowPin, HIGH);
 
+  // camera setup
   pinMode(CAM_SW, OUTPUT);
   cam_wake();
   digitalWrite(CAM_SW, LOW);
+  if(camFlag==1) wakeahead = 20; // give camera time to boot
   
   
   //setup display and controls
@@ -319,7 +321,7 @@ void setup() {
   
   cDisplay();
 
-  int roundSeconds = 10;//modulo to nearest x seconds
+
   if(rec_int > 60) roundSeconds = 60;
   if(rec_int > 300) roundSeconds = 300;
   
@@ -331,8 +333,6 @@ void setup() {
   stopTime = startTime + rec_dur;  // this will be set on start of recording
 
   if (recMode==MODE_DIEL) checkDielTime();  
-  
- // if (recMode==MODE_DIEL) checkDielTime();  
   
   nbufs_per_file = (long) (ceil(((rec_dur * audio_srate / 256.0) / (float) NREC)) * (float) NREC);
   long ss = rec_int - wakeahead;
