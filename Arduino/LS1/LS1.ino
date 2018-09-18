@@ -6,7 +6,7 @@
 // David Mann
 
 // To Do:
-// Diel record mode
+// Test diel record mode
 // LHC Camera control
 
 // 
@@ -18,12 +18,17 @@
 // Modified by WMXZ 15-05-2018 for SdFS anf multiple sampling frequencies
 // Optionally uses SdFS from Bill Greiman https://github.com/greiman/SdFs; but has higher current draw in sleep
 
-char codeVersion[12] = "2018-09-17";
-static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-
+//*****************************************************************************************
+//
+char codeVersion[12] = "2018-09-18";
+static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
+int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
 //#define USE_LONG_FILE_NAMES
+
+//******************************************************************************************
+
 
 #include "LHI_record_queue.h"
 #include "control_sgtl5000.h"
@@ -66,7 +71,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 #define NREC 32 // increase disk buffer to speed up disk access
 
-int camFlag = 0;
+
 
 static uint8_t myID[8];
 
@@ -98,6 +103,7 @@ const int DOWN = 3;
 const int SELECT = 8;
 const int hydroPowPin = 2;
 const int vSense = 16; 
+const int CAM_SW = 5;
 
 // microSD chip select pins
 #define CS1 10
@@ -134,6 +140,7 @@ time_t t;
 
 byte startHour, startMinute, endHour, endMinute; //used in Diel mode
 
+boolean CAMON = 0;
 boolean audioFlag = 1;
 
 boolean LEDSON=1;
@@ -234,11 +241,15 @@ void setup() {
   Wire.begin();
 
   pinMode(hydroPowPin, OUTPUT);
-
   pinMode(vSense, INPUT);
   analogReference(DEFAULT);
 
   digitalWrite(hydroPowPin, HIGH);
+
+  pinMode(CAM_SW, OUTPUT);
+  cam_wake();
+  digitalWrite(CAM_SW, LOW);
+  
   
   //setup display and controls
   pinMode(UP, INPUT);
@@ -247,6 +258,7 @@ void setup() {
   digitalWrite(UP, HIGH);
   digitalWrite(DOWN, HIGH);
   digitalWrite(SELECT, HIGH);  
+  
 
   //setSyncProvider(getTeensy3Time); //use Teensy RTC to keep time
   t = getTeensy3Time();
@@ -317,6 +329,8 @@ void setup() {
   startTime -= startTime % roundSeconds;  
   startTime += roundSeconds; //move forward
   stopTime = startTime + rec_dur;  // this will be set on start of recording
+
+  if (recMode==MODE_DIEL) checkDielTime();  
   
  // if (recMode==MODE_DIEL) checkDielTime();  
   
@@ -379,6 +393,9 @@ void loop() {
       //
       //static uint32_t to; if(t >to) Serial.println(t); to=t;
       //
+      if((t >= startTime - 1) & CAMON==1){ //start camera 1 second before to give a chance to get going
+        if (camFlag)  cam_start();
+      }
       if(t >= startTime){      // time to start?
         if(noDC==0) {
           audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
@@ -388,7 +405,7 @@ void loop() {
         
         stopTime = startTime + rec_dur;
         startTime = stopTime + rec_int;
-      //  if (recMode==MODE_DIEL) checkDielTime();
+        if (recMode==MODE_DIEL) checkDielTime();
 
         Serial.print("Current Time: ");
         printTime(getTeensy3Time());
@@ -408,6 +425,7 @@ void loop() {
   if (mode == 1) {
     continueRecording();  // download data  
 
+
 //  if(printDiags){
 //        if (queue1.getQueue_dropped() > 0){
 //      Serial.println(queue1.getQueue_dropped());
@@ -422,6 +440,7 @@ void loop() {
       frec.seek(0);
       frec.write((uint8_t *)&wav_hdr, 44);
       frec.close();
+      if(camFlag) cam_off(); //camera off
       display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
       delay(100);
       cDisplay();
@@ -458,7 +477,7 @@ void loop() {
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
             digitalWrite(hydroPowPin, LOW); //hydrophone off
             audio_power_down();  // when this is activated, seems to occassionally have trouble restarting; no LRCLK signal or RX on Teensy
-
+            if(camFlag) cam_off(); //camera off
             if(printDiags){
               Serial.print("Snooze HH MM SS ");
               Serial.print(snooze_hour);
@@ -478,9 +497,13 @@ void loop() {
 
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
             delay(300);  // give time for Serial to reconnect to USB
+            if(camFlag) cam_wake();
             audio_power_up();  // when use audio_power_down() before sleeping, does not always get LRCLK. This did not fix.  
          }
-        Serial.println("Display");
+         else{
+          if(camFlag) cam_stop();
+         }
+
         display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
         mode = 0;  // standby mode
       }
@@ -518,9 +541,9 @@ void continueRecording() {
     buf_count += NREC;
 //WMXZ    audioIntervalCount += NREC;
     
-    if(printDiags){
-      Serial.print(".");
-   }
+//    if(printDiags){
+//      Serial.print(".");
+//   }
   }
 }
 
@@ -601,6 +624,13 @@ void FileInit()
       logFile.print(voltage); 
       logFile.print(',');
       logFile.println(codeVersion);
+      if(voltage < 3.1){
+        if (camFlag){
+          cam_off();
+          camFlag = 0;
+          logFile.println("Camera off.");
+        }
+      }
       if(voltage < 3.0){
         logFile.println("Stopping because Voltage less than 3.0 V");
         logFile.close();  
@@ -812,11 +842,53 @@ void checkSD(){
         }
     }
     else
+      logFileHeader();
       break;
   }
 
   if(printDiags){
     Serial.print("Current Card: ");
     Serial.println(currentCard + 1);
+  }
+}
+
+void checkDielTime(){
+  unsigned int startMinutes = (startHour * 60) + (startMinute);
+  unsigned int endMinutes = (endHour * 60) + (endMinute );
+  unsigned int startTimeMinutes =  (hour(startTime) * 60) + (minute(startTime));
+  
+  tmElements_t tmStart;
+  tmStart.Year = year(startTime) - 1970;
+  tmStart.Month = month(startTime);
+  tmStart.Day = day(startTime);
+  // check if next startTime is between startMinutes and endMinutes
+  // e.g. 06:00 - 12:00 or 
+  if(startMinutes<endMinutes){
+     if ((startTimeMinutes < startMinutes) | (startTimeMinutes > endMinutes)){
+       // set startTime to startHour startMinute
+       tmStart.Hour = startHour;
+       tmStart.Minute = startMinute;
+       tmStart.Second = 0;
+       startTime = makeTime(tmStart);
+       Serial.print("New diel start:");
+       printTime(startTime);
+       if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
+       Serial.print("New diel start:");
+       printTime(startTime);
+       }
+     }
+  else{  // e.g. 23:00 - 06:00
+    if((startTimeMinutes<startMinutes) & (startTimeMinutes>endMinutes)){
+      // set startTime to startHour:startMinute
+       tmStart.Hour = startHour;
+       tmStart.Minute = startMinute;
+       tmStart.Second = 0;
+       startTime = makeTime(tmStart);
+       Serial.print("New diel start:");
+       printTime(startTime);
+       if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
+       Serial.print("New diel start:");
+       printTime(startTime);
+    }
   }
 }
