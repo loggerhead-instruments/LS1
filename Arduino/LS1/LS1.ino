@@ -5,21 +5,18 @@
 // 2016-2018
 // David Mann
 
-// To Do:
-// Test Camera control
-
 // 
 // Modified from PJRC audio code
 // http://www.pjrc.com/store/teensy3_audio.html
 //
-// Compile with 48 MHz Optimize Speed
+// Compile with 72 MHz Fastest
 
 // Modified by WMXZ 15-05-2018 for SdFS anf multiple sampling frequencies
 // Optionally uses SdFS from Bill Greiman https://github.com/greiman/SdFs; but has higher current draw in sleep
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2018-09-18";
+char codeVersion[12] = "2018-09-25";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
@@ -287,22 +284,22 @@ void setup() {
   display.println("Loggerhead");
   display.display();
   
-  // Initialize the SD card
-  SPI.setMOSI(7);
-  SPI.setSCK(14);
-  if (!(sd.begin(CS1))) {
-    // stop here if no SD card, but print a message
-    Serial.println("Unable to access the SD card");
-    
-    while (1) {
-      cDisplay();
-      display.println("SD error. Restart.");
-      displayClock(getTeensy3Time(), BOTTOM);
-      display.display();
-      delay(1000);  
-      //resetFunc();
-    }
-  }
+//  // Initialize the SD card
+//  SPI.setMOSI(7);
+//  SPI.setSCK(14);
+//  if (!(sd.begin(CS1))) {
+//    // stop here if no SD card, but print a message
+//    Serial.println("Unable to access the SD card");
+//    
+//    while (1) {
+//      cDisplay();
+//      display.println("SD error. Restart.");
+//      displayClock(getTeensy3Time(), BOTTOM);
+//      display.display();
+//      delay(1000);  
+//      //resetFunc();
+//    }
+//  }
   //SdFile::dateTimeCallback(file_date_time);
   
   // Audio connections require memory, and the record queue
@@ -559,20 +556,6 @@ void stopRecording() {
   //frec.timestamp(T_WRITE,(uint16_t) year(t),month(t),day(t),hour(t),minute(t),second);
   frec.close();
   delay(100);
-}
-
-
-void sdInit(){
-     if (!(sd.begin(10))) {
-    // stop here if no SD card, but print a message
-    Serial.println("Unable to access the SD card");
-    
-    cDisplay();
-    display.println("SD error. Restart.");
-    displayClock(getTeensy3Time(), BOTTOM);
-    display.display();
-    delay(1000);
-  }
 }
 
 

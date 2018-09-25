@@ -1,5 +1,5 @@
-float mAmpRec = 45;  // actual about 43 mA
-float mAmpSleep = 2.8; // actual about 2.6 mA
+float mAmpRec = 45;  // actual about 43 mA ;  37 mA if compiled for 72 MHz using 400 GB card; 45 mA with 256 GB card
+float mAmpSleep = 3.2;
 float mAmpCam = 600;
 byte nBatPacks = 4;
 float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries should be 14000
@@ -54,23 +54,31 @@ void manualSettings(){
     display.setTextSize(1);
     display.setCursor(0, 16);
     display.println("Card Free/Total MB");
+    // Initialize the SD card
+    SPI.setMOSI(7);
+    SPI.setSCK(14);
+    SPI.setMISO(12);
+      
     for (int n=0; n<4; n++){
       freeMB[n] = 0; //reset
       Serial.println(); Serial.println();
       Serial.print("Card:"); Serial.println(n + 1);
       display.print(n + 1); display.print("    ");
       display.display();
-      
-      // Initialize the SD card
-      SPI.setMOSI(7);
-      SPI.setSCK(14);
-      SPI.setMISO(12);
-    
+
       if(sd.begin(chipSelect[n], SD_SCK_MHZ(50))){
-        uint32_t volFree = sd.vol()->freeClusterCount();
+
+        int32_t volFree = sd.vol()->freeClusterCount();
+        Serial.print("volFree:");
+        Serial.println(volFree);
+
         float fs = 0.000512 * volFree * sd.vol()->blocksPerCluster();
+
         uint32_t freeSpace = (uint32_t) fs;
         uint32_t volumeMB = uint32_t ( 0.000512 * (float) sd.card()->cardSize());
+
+        Serial.print("Volume MB ");
+        Serial.println(volumeMB);
         
         if (freeSpace < 200) freeMB[n] = 0;
         else
@@ -83,6 +91,7 @@ void manualSettings(){
         display.print("/");
         display.println(volumeMB);
         display.display();
+        delay(1000);
       }
       else{
         Serial.println("Unable to access the SD card");
