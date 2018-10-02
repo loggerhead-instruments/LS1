@@ -174,7 +174,7 @@ void manualSettings(){
         }
         break;
       case setRecDur:
-        rec_dur = updateVal(rec_dur, 1, 3600);
+        rec_dur = updateVal(rec_dur, 1, 21600);
         display.print("Rec:");
         display.print(rec_dur);
         display.println("s");
@@ -301,6 +301,8 @@ int updateVal(long curVal, long minVal, long maxVal){
       heldUp += 1;
     }
     else heldUp = 0;
+
+    if (heldUp > 100) curVal += 4; //if held up for a while skip an additional 4
     
     if(downVal==0){
       settingsChanged = 1;
@@ -312,6 +314,8 @@ int updateVal(long curVal, long minVal, long maxVal){
         heldDown += 1;
     }
     else heldDown = 0;
+
+    if(heldDown > 100) curVal -= 4;
 
     if (curVal < minVal) curVal = maxVal;
     if (curVal > maxVal) curVal = minVal;
