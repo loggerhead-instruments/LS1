@@ -514,7 +514,7 @@ void I2S_dividers(uint32_t *iscl, uint32_t fsamp, uint32_t nbits)
     int64_t i2 = 1;
     int64_t i3 = iscl[2]+1;
     int fcpu=F_CPU;
-    if(F_CPU<=96000000) fcpu=96000000;
+    if((F_CPU==96000000) || (F_CPU==48000000) || (F_CPU==24000000)) fcpu=96000000; 
     float A=fcpu/2.0f/i3/(2.0f*nbits*fsamp);
     float mn=1.0; 
     for(int ii=1;ii<64;ii++) 
@@ -535,12 +535,12 @@ void I2S_modification(uint32_t fsamp, uint16_t nbits)
     iscl[2]=1;  // 32 bit modified I2S (256/(2*(2*32)-1)
   I2S_dividers(iscl, fsamp ,nbits);
   int fcpu=F_CPU;
-  if(F_CPU<=96000000) fcpu=96000000;
+  if((F_CPU==96000000) || (F_CPU==48000000) || (F_CPU==24000000)) fcpu=96000000; 
   float fs = (fcpu * (iscl[0]+1.0f)) / (iscl[1]+1l) / 2 / (iscl[2]+1l) / (2l*nbits);
-  #if DEBUG >0
-    Serial.printf("%d %d: %d %d %d %d %d %d\n\r",
+
+  Serial.printf("%d %d: %d %d %d %d %d %d\n\r",
         F_CPU, fcpu, fsamp, (int)fs, nbits,iscl[0]+1,iscl[1]+1,iscl[2]+1);
-  #endif
+  
 
   // stop I2S
   I2S0_RCSR &= ~(I2S_RCSR_RE | I2S_RCSR_BCE);

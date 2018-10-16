@@ -1,5 +1,5 @@
-float mAmpRec = 45;  // actual about 43 mA ;  37 mA if compiled for 72 MHz using 400 GB card; 45 mA with 256 GB card
-float mAmpSleep = 3.2;
+float mAmpRec = 49;
+float mAmpSleep = 2.8;
 float mAmpCam = 600;
 byte nBatPacks = 4;
 float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries should be 14000
@@ -121,7 +121,7 @@ void manualSettings(){
   if (endHour<0 | endHour>23) endHour = 0;
   if (endMinute<0 | endMinute>59) endMinute = 0;
   if (recMode<0 | recMode>1) recMode = 0;
-  if (isf<0 | isf>4) isf = I_SAMP; // change 3 to 4 to allow 192 kHz
+  if (isf<0 | isf>=I_SAMP) isf = I_SAMP; // change 4 to 5 to allow 192 kHz
 
 //  // if LOG.CSV present, skip manual settings
 //  #if USE_SDFS==1
@@ -228,7 +228,7 @@ void manualSettings(){
         display.print(second(getTeensy3Time()));
         break;
       case setFsamp:
-        isf = updateVal(isf, 0, 5);
+        isf = updateVal(isf, 0, I_SAMP);
         display.printf("SF: %.1f",lhi_fsamps[isf]/1000.0f);
         break;
       case setMode:
@@ -303,11 +303,12 @@ int updateVal(long curVal, long minVal, long maxVal){
     else heldUp = 0;
 
     if (heldUp > 100) curVal += 4; //if held up for a while skip an additional 4
+    if (heldUp > 200) curVal += 55; //if held up for a while skip an additional 4
     
     if(downVal==0){
       settingsChanged = 1;
       if(heldDown < 20) delay(200);
-      if(curVal < 10) { // going down to 0, go back to slow mode
+      if(curVal < 61) { // going down to 0, go back to slow mode
         heldDown = 0;
       }
         curVal -= 1;
@@ -316,6 +317,7 @@ int updateVal(long curVal, long minVal, long maxVal){
     else heldDown = 0;
 
     if(heldDown > 100) curVal -= 4;
+    if(heldDown > 200) curVal -= 55;
 
     if (curVal < minVal) curVal = maxVal;
     if (curVal > maxVal) curVal = minVal;
@@ -352,8 +354,8 @@ void displaySettings(){
 
   uint32_t totalRecSeconds = 0;
 
-  float fileBytes = (2 * rec_dur * lhi_fsamps[isf]) + 44;
-  float fileMB = (fileBytes + 32768) / 1000 / 1000; // add cluster size so don't underestimate fileMB
+  uint32_t fileBytes = (2 * rec_dur * lhi_fsamps[isf]) + 44;
+  float fileMB = (fileBytes + 32768) / 1000.0 / 1000.0; // add cluster size so don't underestimate fileMB
   float dielFraction = 1.0; //diel mode decreases time spent recording, increases time in sleep
   if(recMode==MODE_DIEL){
     float dielHours, dielMinutes;
@@ -400,9 +402,14 @@ void displaySettings(){
     else{
       filesPerCard[n] = (uint32_t) floor(freeMB[n] / fileMB);
     }
+    
     totalRecSeconds += (filesPerCard[n] * rec_dur);
+//    Serial.print("file bytes:");
+//    Serial.print(fileBytes);
+//    Serial.print("file MB:");
+//    Serial.print(fileMB);
 //    Serial.print(" ");
-//    Serial.print(filesPerCard[n]);
+//    Serial.println(filesPerCard[n]);
     //display.setCursor(60, 18 + (n*8));  // display file count for debugging
     //display.print(n+1); display.print(":");display.print(filesPerCard[n]); 
   }
