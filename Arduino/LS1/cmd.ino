@@ -66,7 +66,8 @@ int ProcCmd(char *pCmd)
       
       case ('N' + ('D'<<8)):
       {
-        noDC = 1;
+        sscanf(&pCmd[3],"%d",&lv1);
+        noDC = lv1;
         break;
       }
       

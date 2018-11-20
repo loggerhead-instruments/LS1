@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2018-10-16";
+char codeVersion[12] = "2018-11-20";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
@@ -92,7 +92,7 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=265,212
 
 const int myInput = AUDIO_INPUT_LINEIN;
 int gainSetting = 4; //default gain setting; can be overridden in setup file
-int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset
+int noDC = 2; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
 
 // Pin Assignments
 const int UP = 4;
@@ -398,6 +398,10 @@ void loop() {
           audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
           noDC = -1;
         }
+        if(noDC==2){
+          audio_bypass_adc_hp();
+          noDC = -1;
+         }
         Serial.println("Record Start.");
         
         stopTime = startTime + rec_dur;
