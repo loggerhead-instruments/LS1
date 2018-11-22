@@ -16,14 +16,14 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2018-11-20";
+char codeVersion[12] = "2018-11-22";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
 int roundSeconds = 10;//start time modulo to nearest roundSeconds
 int wakeahead = 5;  //wake from snooze to give hydrophone and camera time to power up
-
+int noDC = 1; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
 //*****************************************************************************************
 
 
@@ -92,7 +92,7 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=265,212
 
 const int myInput = AUDIO_INPUT_LINEIN;
 int gainSetting = 4; //default gain setting; can be overridden in setup file
-int noDC = 2; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
+
 
 // Pin Assignments
 const int UP = 4;
@@ -396,11 +396,9 @@ void loop() {
       if(t >= startTime){      // time to start?
         if(noDC==0) {
           audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
-          noDC = -1;
         }
         if(noDC==2){
           audio_bypass_adc_hp();
-          noDC = -1;
          }
         Serial.println("Record Start.");
         
@@ -499,7 +497,8 @@ void loop() {
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
             delay(300);  // give time for Serial to reconnect to USB
             if(camFlag) cam_wake();
-            audio_power_up();  // when use audio_power_down() before sleeping, does not always get LRCLK. This did not fix.  
+            AudioInit(isf);
+            //audio_power_up();  // when use audio_power_down() before sleeping, does not always get LRCLK. This did not fix.  
          }
          else{
           if(camFlag) cam_stop();
