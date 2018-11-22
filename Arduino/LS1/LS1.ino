@@ -23,7 +23,7 @@ int camFlag = 0;
 #define MQ 100 // to be used with LHI record queue (modified local version)
 int roundSeconds = 10;//start time modulo to nearest roundSeconds
 int wakeahead = 5;  //wake from snooze to give hydrophone and camera time to power up
-int noDC = 2; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
+int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
 //*****************************************************************************************
 
 
