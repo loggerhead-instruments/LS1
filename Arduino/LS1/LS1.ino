@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2018-11-22";
+char codeVersion[12] = "2018-11-27";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
@@ -307,12 +307,15 @@ void setup() {
   // initialize now to estimate DC offset during setup
   AudioMemory(MQ+10);
   
-  manualSettings();
+
   
   audio_srate = lhi_fsamps[isf];
 //WMXZ  audioIntervalSec = 256.0 / audio_srate; //buffer interval in seconds
 
-  AudioInit(isf); // this calls Wire.begin() in control_sgtl5000.cpp
+  AudioInit(isf); // load current gain setting
+  manualSettings();
+  audio_srate = lhi_fsamps[isf];
+  AudioInit(isf); // set with new settings
 
   logFileHeader();
   
@@ -495,9 +498,11 @@ void loop() {
            // if (printDiags==0) usbDisable();
 
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
+            AudioInit(isf);
             delay(300);  // give time for Serial to reconnect to USB
             if(camFlag) cam_wake();
             AudioInit(isf);
+            
             //audio_power_up();  // when use audio_power_down() before sleeping, does not always get LRCLK. This did not fix.  
          }
          else{
