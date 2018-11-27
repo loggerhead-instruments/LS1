@@ -350,8 +350,9 @@ void displaySettings(){
 
   display.printf("%.1f kHz",lhi_fsamps[isf]/1000.0f);
   display.print(" ");
+  if(gainDb>0) display.print('+');
   display.printf("%.1f",gainDb);
-  display.print("dB gain");
+  display.print("dB");
 
   display.setTextSize(1);
 
