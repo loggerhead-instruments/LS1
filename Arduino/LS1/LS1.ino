@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2018-11-27";
+char codeVersion[12] = "2018-11-29";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
@@ -498,7 +498,6 @@ void loop() {
            // if (printDiags==0) usbDisable();
 
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
-            AudioInit(isf);
             delay(300);  // give time for Serial to reconnect to USB
             if(camFlag) cam_wake();
             AudioInit(isf);
