@@ -111,6 +111,8 @@ void manualSettings(){
 
  
   LoadScript(); // secret settings accessible from card 1
+  calcGain();
+  writeEEPROM(); // update EEPROM in case any settings changed from card
   
   
   // make sure settings valid (if EEPROM corrupted or not set yet)
@@ -483,7 +485,7 @@ void readEEPROM(){
   {
     nBatPacks = newBatPacks;
   }
-  
+  gainSetting = EEPROM.read(15);
 }
 
 union {
@@ -517,5 +519,6 @@ void writeEEPROM(){
   EEPROM.write(12, recMode); //byte
   EEPROM.write(13, isf); //byte
   EEPROM.write(14, nBatPacks); //byte
+  EEPROM.write(15, gainSetting); //byte
 }
 
