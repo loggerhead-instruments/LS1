@@ -6,7 +6,7 @@ LS1 Snap multi-card audio recorder
 
 1.	Install Teensyduino from https://www.pjrc.com/teensy/loader.html
 2.	Get latest hex file from appropriate repository
-	https://github.com/loggerhead-instruments/LS1/blob/96-kHz/hex
+	https://github.com/loggerhead-instruments/LS1/blob/96-kHz/hex/LS1.2019-03-26.hex
 	To download the file, right click on the Raw button and select Save As link.
 3.	Connect microUSB cable to small board on bottom of main LS1 board. You may need to unscrew it. The microUSB cable will provide power to the LS1.
 4.	Run the Teensy Loader program.
