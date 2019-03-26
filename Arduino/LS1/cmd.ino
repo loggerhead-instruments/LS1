@@ -61,6 +61,8 @@ int ProcCmd(char *pCmd)
       {
         sscanf(&pCmd[3],"%d",&lv1);
         gainSetting = lv1;
+        if((gainSetting<0) | (gainSetting>15)) gainSetting = 4;
+        EEPROM.write(15, gainSetting); //byte
         break;
       }
       

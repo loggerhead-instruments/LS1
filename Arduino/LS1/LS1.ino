@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2018-12-19";
+char codeVersion[12] = "2019-03-26";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
@@ -705,9 +705,6 @@ void AudioInit(int ifs){
   I2S_modification(lhi_fsamps[ifs], 16);
   Wire.begin();
   audio_enable(ifs);
-  
-  sgtl5000_1.lineInLevel(gainSetting);  //default = 4
-  calcGain();
 }
 
 void calcGain(){
