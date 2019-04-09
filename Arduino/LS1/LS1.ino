@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2019-03-26";
+char codeVersion[12] = "2019-04-09";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
@@ -59,7 +59,7 @@ int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
 #define CPU_RESTART_VAL 0x5FA0004
 #define CPU_RESTART (*CPU_RESTART_ADDR = CPU_RESTART_VAL);
 
-#define OLED_RESET 4
+#define OLED_RESET -1
 Adafruit_SSD1306 display(OLED_RESET);
 #define BOTTOM 55
 
@@ -251,12 +251,9 @@ void setup() {
   
   
   //setup display and controls
-  pinMode(UP, INPUT);
-  pinMode(DOWN, INPUT);
-  pinMode(SELECT, INPUT);
-  digitalWrite(UP, HIGH);
-  digitalWrite(DOWN, HIGH);
-  digitalWrite(SELECT, HIGH);  
+  pinMode(UP, INPUT_PULLUP);
+  pinMode(DOWN, INPUT_PULLUP);
+  pinMode(SELECT, INPUT_PULLUP);
   
 
   //setSyncProvider(getTeensy3Time); //use Teensy RTC to keep time
