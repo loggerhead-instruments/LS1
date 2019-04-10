@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2019-04-09";
+char codeVersion[12] = "2019-04-10";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
@@ -101,6 +101,7 @@ const int SELECT = 8;
 const int hydroPowPin = 2;
 const int vSense = 16; 
 const int CAM_SW = 5;
+const int displayPow = 6;
 
 // microSD chip select pins
 #define CS1 10
@@ -236,6 +237,9 @@ void setup() {
   Serial.println(RTC_TSR);
   
   Wire.begin();
+
+  pinMode(displayPow, OUTPUT);
+  digitalWrite(displayPow, HIGH);
 
   pinMode(vSense, INPUT);
   analogReference(DEFAULT);
