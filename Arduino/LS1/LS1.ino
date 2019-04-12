@@ -9,16 +9,16 @@
 // Modified from PJRC audio code
 // http://www.pjrc.com/store/teensy3_audio.html
 //
-// Compile with 96 MHz Fastest
+// Compile with 72 MHz Fastest
 
 // Modified by WMXZ 15-05-2018 for SdFS anf multiple sampling frequencies
 // Optionally uses SdFS from Bill Greiman https://github.com/greiman/SdFs; but has higher current draw in sleep
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2019-04-10";
+char codeVersion[12] = "2019-04-12";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 0;
+int camFlag = 1;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
 int roundSeconds = 10;//start time modulo to nearest roundSeconds
