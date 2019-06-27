@@ -16,12 +16,12 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2019-05-28";
+char codeVersion[12] = "2019-06-27";
 static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 1;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
-int roundSeconds = 10;//start time modulo to nearest roundSeconds
+int roundSeconds = 60;//start time modulo to nearest roundSeconds
 int wakeahead = 5;  //wake from snooze to give hydrophone and camera time to power up
 int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
 //*****************************************************************************************
@@ -249,7 +249,6 @@ void setup() {
 
   // camera setup
   pinMode(CAM_SW, OUTPUT);
-  cam_wake();
   digitalWrite(CAM_SW, LOW);
   if(camFlag==1) wakeahead = 20; // give camera time to boot
   
@@ -333,7 +332,7 @@ void setup() {
   startTime += roundSeconds; //move forward
   stopTime = startTime + rec_dur;  // this will be set on start of recording
 
-  if (recMode==MODE_DIEL) checkDielTime();  
+  if (recMode==MODE_DIEL & camFlag==0) checkDielTime();  // adjust start time to diel mode
   
   nbufs_per_file = (long) (ceil(((rec_dur * audio_srate / 256.0) / (float) NREC)) * (float) NREC);
   long ss = rec_int - wakeahead;
@@ -367,6 +366,8 @@ void setup() {
   // create first folder to hold data
   folderMonth = -1;  //set to -1 so when first file made will create directory
   checkSD();
+
+  if(camFlag & (checkCamDielTime()==1))  cam_wake();
 }
 
 //
@@ -391,12 +392,7 @@ void loop() {
       displayClock(startTime, 40);
       displayClock(t, BOTTOM);
       display.display();
-      //
-      //static uint32_t to; if(t >to) Serial.println(t); to=t;
-      //
-      if((t >= startTime - 1) & CAMON==1){ //start camera 1 second before to give a chance to get going
-        if (camFlag)  cam_start();
-      }
+
       if(t >= startTime){      // time to start?
         if(noDC==0) {
           audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
@@ -405,10 +401,18 @@ void loop() {
           audio_bypass_adc_hp();
          }
         Serial.println("Record Start.");
+
         
+        if (camFlag){
+          // start camera if normal record mode, or if diel mode and within time range
+          // needs to be called before next startTime is calculated
+          if(recMode==MODE_NORMAL | checkCamDielTime()==1) cam_start();
+        }
+
+        // get current stop time and calculate next startTime
         stopTime = startTime + rec_dur;
         startTime = stopTime + rec_int;
-        if (recMode==MODE_DIEL) checkDielTime();
+        if ((camFlag==0) & (recMode==MODE_DIEL)) checkDielTime();
 
         Serial.print("Current Time: ");
         printTime(getTeensy3Time());
@@ -428,12 +432,6 @@ void loop() {
   if (mode == 1) {
     continueRecording();  // download data  
 
-
-//  if(printDiags){
-//        if (queue1.getQueue_dropped() > 0){
-//      Serial.println(queue1.getQueue_dropped());
-//    }
-//  }
     if(digitalRead(UP)==0 & digitalRead(DOWN)==0){
       // stop recording
       queue1.end();
@@ -480,7 +478,7 @@ void loop() {
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
             digitalWrite(hydroPowPin, LOW); //hydrophone off
             audio_power_down();  // when this is activated, seems to occassionally have trouble restarting; no LRCLK signal or RX on Teensy
-            if(camFlag) cam_off(); //camera off
+            if(camFlag & (CAMON>0)) cam_off(); //camera off if it got turned on
             if(printDiags){
               Serial.print("Snooze HH MM SS ");
               Serial.print(snooze_hour);
@@ -500,13 +498,13 @@ void loop() {
 
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
             delay(300);  // give time for Serial to reconnect to USB
-            if(camFlag) cam_wake();
+            if(camFlag & checkCamDielTime()) cam_wake();
             AudioInit(isf);
             
             //audio_power_up();  // when use audio_power_down() before sleeping, does not always get LRCLK. This did not fix.  
          }
          else{
-          if(camFlag) cam_stop();
+          if(camFlag & (CAMON>0)) cam_stop();
          }
 
         display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
@@ -884,3 +882,35 @@ void checkDielTime(){
     }
   }
 }
+
+boolean checkCamDielTime(){
+  
+  boolean startCam = 0;
+  unsigned int startMinutes = (startHour * 60) + (startMinute);
+  unsigned int endMinutes = (endHour * 60) + (endMinute );
+  unsigned int currentTimeMinutes = (hour(startTime) * 60) + minute(startTime);
+
+  Serial.print("diel start Minutes");
+  Serial.println(startMinutes);
+  Serial.print("diel end Minutes");
+  Serial.println(endMinutes);
+  Serial.print("startTimeMinutes");
+  Serial.println(currentTimeMinutes);
+
+  // check if next currebtTimeMinutes is between startMinutes and endMinutes
+  // e.g. 06:00 - 12:00 or 
+  if(startMinutes<endMinutes){
+    if((currentTimeMinutes >= startMinutes) & (currentTimeMinutes < endMinutes)) {
+      startCam = 1;
+      Serial.println("Start Time is within diel range 1");
+    }
+  }
+  else{ // e.g. 23:00 - 06:00
+    if(((currentTimeMinutes >= startMinutes) & (currentTimeMinutes<(24*60))) | ((currentTimeMinutes > 0) & (currentTimeMinutes < endMinutes))) {
+      startCam = 1;
+      Serial.println("Start Time is within diel range 2");
+    }
+  }
+  return startCam;
+}
+

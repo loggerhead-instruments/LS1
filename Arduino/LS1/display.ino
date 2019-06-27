@@ -1,6 +1,6 @@
 float mAmpRec = 49;
-float mAmpSleep = 2.8;
-float mAmpCam = 600;
+float mAmpSleep = 3.4;
+float mAmpCam = 700;
 byte nBatPacks = 4;
 float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries should be 14000
 
@@ -270,7 +270,11 @@ void manualSettings(){
         display.print("Mode:");
         recMode = updateVal(recMode, 0, 1);
         if (recMode==MODE_NORMAL)  display.print("Norm");
-        if (recMode==MODE_DIEL) display.print("Diel");
+        if (recMode==MODE_DIEL) {
+          if(camFlag==0) display.print("Diel");
+          else
+            display.print("Diel*");
+        }
         break;
       case setBatPack:
         nBatPacks = updateVal(nBatPacks, 1, 8);
@@ -374,7 +378,13 @@ void displaySettings(){
 
   display.print("Rec:");
   display.print(rec_dur);
-  display.println("s ");
+  display.print("s ");
+  if(recMode==MODE_DIEL){
+    if(camFlag==0) display.print(" Diel");
+    else
+      display.print(" Diel Cam");
+  }
+  display.println();
   
   display.print("Sleep:");
   display.print(rec_int);
@@ -413,12 +423,19 @@ void displaySettings(){
     dielMinutes += (dielHours * 60);
     dielFraction = dielMinutes / (24.0 * 60.0); // fraction of day recording in diel mode
   }
+
   
   float recDraw = mAmpRec + ((float) camFlag * mAmpCam);
   float recFraction = ((float) rec_dur * dielFraction) / (float) (rec_dur + rec_int);
   float sleepFraction = 1 - recFraction;
   float avgCurrentDraw = (recDraw * recFraction) + (mAmpSleep * sleepFraction);
-//
+  if(camFlag & recMode==MODE_DIEL){
+    float audioOnlyFraction = (1.0-dielFraction) * ((float) rec_dur / (float) (rec_dur + rec_int));
+    avgCurrentDraw = (recDraw * recFraction) + (mAmpSleep * sleepFraction) + (mAmpRec * audioOnlyFraction); // this will overestimate because counting sleep twice
+//    Serial.print("Audio only fraction: ");
+//    Serial.println(audioOnlyFraction);
+  }
+
 //  Serial.print("Rec Fraction Sleep Fraction Avg Power:");
 //  Serial.print(rec_dur);
 //  Serial.print("  ");
@@ -429,6 +446,7 @@ void displaySettings(){
 //  Serial.print(sleepFraction);
 //  Serial.print("  ");
 //  Serial.println(avgCurrentDraw);
+
 
   uint32_t powerSeconds = uint32_t (3600.0 * (nBatPacks * mAhPerBat / avgCurrentDraw));
 
@@ -443,6 +461,7 @@ void displaySettings(){
     }
     
     totalRecSeconds += (filesPerCard[n] * rec_dur);
+    float totalCamSeconds = 43200;
 //    Serial.print("file bytes:");
 //    Serial.print(fileBytes);
 //    Serial.print("file MB:");
@@ -458,7 +477,25 @@ void displaySettings(){
 
 
   float totalSecondsMemory = totalRecSeconds / recFraction;
-  if(powerSeconds < totalSecondsMemory){
+  float totalSecondsCamMemory = 43200 / recFraction;
+  if(camFlag){
+      if(powerSeconds < totalSecondsCamMemory){
+   // displayClock(getTeensy3Time() + powerSeconds, 45, 0);
+    display.setCursor(0, 46);
+    display.print("Battery Limit:");
+    display.print(powerSeconds / 86400);
+    display.print("d");
+  }
+  else{
+  //  displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
+    display.setCursor(0, 46);
+    display.print("Cam Limit:");
+    display.print(totalSecondsCamMemory / 86400);
+    display.print("d");
+  }
+  }
+  else{
+      if(powerSeconds < totalSecondsMemory){
    // displayClock(getTeensy3Time() + powerSeconds, 45, 0);
     display.setCursor(0, 46);
     display.print("Battery Limit:");
@@ -472,6 +509,8 @@ void displaySettings(){
     display.print(totalSecondsMemory / 86400);
     display.print("d");
   }
+  }
+
 }
 
 
