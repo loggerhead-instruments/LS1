@@ -17,8 +17,8 @@
 //*****************************************************************************************
 
 char codeVersion[12] = "2019-06-27";
-static boolean printDiags = 1;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 1;
+static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
+int camFlag = 0;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
 int roundSeconds = 60;//start time modulo to nearest roundSeconds
