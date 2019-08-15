@@ -18,7 +18,7 @@
 
 char codeVersion[12] = "2019-06-27";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 0;
+int camFlag = 1;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
 int roundSeconds = 60;//start time modulo to nearest roundSeconds
@@ -401,7 +401,6 @@ void loop() {
           audio_bypass_adc_hp();
          }
         Serial.println("Record Start.");
-
         
         if (camFlag){
           // start camera if normal record mode, or if diel mode and within time range
@@ -451,7 +450,15 @@ void loop() {
       display.display();
       while(1);
     }
-    
+
+    // Diel camera record mode, turn on camera
+    if(CAMON==3){
+      digitalWrite(CAM_SW, LOW);
+      CAMON=4;
+    }
+    if(CAMON==4){
+      cam_start();
+    }
     
     if(buf_count >= nbufs_per_file){       // time to stop?
       if(rec_int == 0){
@@ -462,6 +469,20 @@ void loop() {
         if(printDiags) {
           Serial.print("Audio Mem: ");
           Serial.println(AudioMemoryUsageMax());
+        }
+
+        // deal with camera in diel mode
+        if(camFlag==1){
+          if(recMode==MODE_DIEL & checkCamDielTime()==1){
+            if(CAMON==0)
+              digitalWrite(CAM_SW, HIGH);  // start of button press to turn on. Will turn off button press in main loop
+              delay(50);
+              CAMON=3;
+          }
+          // if recording but should turn off camera
+          if(recMode==MODE_DIEL & checkCamDielTime()==0 & CAMON==2){
+            cam_off();
+          }
         }
       }
       else{
@@ -890,6 +911,8 @@ boolean checkCamDielTime(){
   unsigned int endMinutes = (endHour * 60) + (endMinute );
   unsigned int currentTimeMinutes = (hour(startTime) * 60) + minute(startTime);
 
+  if(recMode==MODE_NORMAL) return 1;  // normal mode; always record
+
   Serial.print("diel start Minutes");
   Serial.println(startMinutes);
   Serial.print("diel end Minutes");
@@ -897,7 +920,7 @@ boolean checkCamDielTime(){
   Serial.print("startTimeMinutes");
   Serial.println(currentTimeMinutes);
 
-  // check if next currebtTimeMinutes is between startMinutes and endMinutes
+  // check if next currentTimeMinutes is between startMinutes and endMinutes
   // e.g. 06:00 - 12:00 or 
   if(startMinutes<endMinutes){
     if((currentTimeMinutes >= startMinutes) & (currentTimeMinutes < endMinutes)) {
