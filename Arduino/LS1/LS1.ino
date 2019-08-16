@@ -473,7 +473,7 @@ void loop() {
     }
     
     if(buf_count >= nbufs_per_file){       // time to stop?
-      if(((rec_int == 0) & (recMode==MODE_NORMAL)) | ((recMode==MODE_DIEL) & (getTeensy3Time()<stopTime))){
+      if(((rec_int == 0) & (recMode==MODE_NORMAL)) | ((rec_int == 0) & (recMode==MODE_DIEL) & (getTeensy3Time()<stopTime))){
         frec.close();
         checkSD();
         FileInit();  // make a new file
