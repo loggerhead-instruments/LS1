@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2019-06-27";
+char codeVersion[12] = "2019-08-16";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 1;
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
