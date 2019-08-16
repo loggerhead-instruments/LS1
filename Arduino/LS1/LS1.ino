@@ -137,6 +137,7 @@ time_t stopTime;
 time_t t;
 
 byte startHour, startMinute, endHour, endMinute; //used in Diel mode
+long dielRecSeconds;
 
 boolean CAMON = 0;
 boolean audioFlag = 1;
@@ -250,7 +251,7 @@ void setup() {
   // camera setup
   pinMode(CAM_SW, OUTPUT);
   digitalWrite(CAM_SW, LOW);
-  if(camFlag==1) wakeahead = 20; // give camera time to boot
+  if(camFlag==1) wakeahead = 30; // give camera time to boot
   
   
   //setup display and controls
@@ -391,10 +392,10 @@ void loop() {
       displayClock(t, BOTTOM);
       display.display();
 
-      // turn on camera 15 seconds ahead of time if it is off
-      if(t >= startTime - 15){ 
-        if(recMode==MODE_NORMAL & camFlag & CAMON==0) cam_wake();
-        if(recMode==MODE_DIEL & camFlag & CAMON==0 & checkCamDielTime(1)) cam_wake();
+      // turn on camera 30 seconds ahead of time if it is off
+      if((t >= startTime - wakeahead) & CAMON==0 & camFlag){ 
+        if(recMode==MODE_NORMAL) cam_wake();
+        if(recMode==MODE_DIEL & checkCamDielTime(1)) cam_wake();
       }
 
       if(t >= startTime){      // time to start?
@@ -413,10 +414,25 @@ void loop() {
         }
 
         // set current stop time and calculate next startTime
-        stopTime = startTime + rec_dur;
-        startTime = stopTime + rec_int;
-        if (camFlag==0 & recMode==MODE_DIEL) setDielTime(); // this will only do diel record for camera, not audio
-        if (camFlag==1 & recMode==MODE_DIEL & rec_int==0) setDielTime();  // this will set diel record for audio and camera if continuous recording
+        if(recMode==MODE_NORMAL){
+          stopTime = startTime + rec_dur;
+          startTime = stopTime + rec_int;
+        }
+        
+        if(recMode==MODE_DIEL){
+          if (rec_int==0){
+             stopTime = startTime + dielRecSeconds;
+             startTime = startTime + (24*3600); // increment startTime by 1 day
+             Serial.print("New diel stop:");
+             printTime(stopTime);
+          }
+          else{
+            stopTime = startTime + rec_dur;
+            startTime = stopTime + rec_int;
+            setDielTime(); // make sure new start is in diel window
+          }
+        }
+        
 
         Serial.print("Current Time: ");
         printTime(getTeensy3Time());
@@ -457,7 +473,7 @@ void loop() {
     }
     
     if(buf_count >= nbufs_per_file){       // time to stop?
-      if(rec_int == 0 & recMode==MODE_NORMAL | (recMode==MODE_DIEL) & (getTeensy3Time()<stopTime)){
+      if(((rec_int == 0) & (recMode==MODE_NORMAL)) | ((recMode==MODE_DIEL) & (getTeensy3Time()<stopTime))){
         frec.close();
         checkSD();
         FileInit();  // make a new file
@@ -854,6 +870,8 @@ void setDielTime(){
   tmStart.Year = year(startTime) - 1970;
   tmStart.Month = month(startTime);
   tmStart.Day = day(startTime);
+
+
   // check if next startTime is between startMinutes and endMinutes
   // e.g. 06:00 - 12:00 or 
   if(startMinutes<endMinutes){
@@ -863,13 +881,14 @@ void setDielTime(){
        tmStart.Minute = startMinute;
        tmStart.Second = 0;
        startTime = makeTime(tmStart);
-       Serial.print("New diel start:");
-       printTime(startTime);
        if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
        Serial.print("New diel start:");
        printTime(startTime);
-       }
      }
+     dielRecSeconds = (endMinutes-startMinutes) * 60;
+     Serial.print("Diel Rec Seconds");
+     Serial.println(dielRecSeconds);
+  }
   else{  // e.g. 23:00 - 06:00
     if((startTimeMinutes<startMinutes) & (startTimeMinutes>endMinutes)){
       // set startTime to startHour:startMinute
@@ -877,12 +896,13 @@ void setDielTime(){
        tmStart.Minute = startMinute;
        tmStart.Second = 0;
        startTime = makeTime(tmStart);
-       Serial.print("New diel start:");
-       printTime(startTime);
        if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
        Serial.print("New diel start:");
        printTime(startTime);
     }
+    dielRecSeconds = ((1440 - startMinutes) * 60) + (endMinutes * 60);
+    Serial.print("Diel Rec Seconds");
+    Serial.println(dielRecSeconds);
   }
 }
 
