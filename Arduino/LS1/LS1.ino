@@ -332,7 +332,7 @@ void setup() {
   startTime += roundSeconds; //move forward
   stopTime = startTime + rec_dur;  // this will be set on start of recording
 
-  if (recMode==MODE_DIEL & camFlag==0) checkDielTime();  // adjust start time to diel mode
+  if (recMode==MODE_DIEL) setDielTime();  // adjust start time to diel mode
   
   nbufs_per_file = (long) (ceil(((rec_dur * audio_srate / 256.0) / (float) NREC)) * (float) NREC);
   long ss = rec_int - wakeahead;
@@ -366,8 +366,6 @@ void setup() {
   // create first folder to hold data
   folderMonth = -1;  //set to -1 so when first file made will create directory
   checkSD();
-
-  if(camFlag & (checkCamDielTime()==1))  cam_wake();
 }
 
 //
@@ -393,6 +391,12 @@ void loop() {
       displayClock(t, BOTTOM);
       display.display();
 
+      // turn on camera 15 seconds ahead of time if it is off
+      if(t >= startTime - 15){ 
+        if(recMode==MODE_NORMAL & camFlag & CAMON==0) cam_wake();
+        if(recMode==MODE_DIEL & camFlag & CAMON==0 & checkCamDielTime(1)) cam_wake();
+      }
+
       if(t >= startTime){      // time to start?
         if(noDC==0) {
           audio_freeze_adc_hp(); // this will lower the DC offset voltage, and reduce noise
@@ -405,13 +409,14 @@ void loop() {
         if (camFlag){
           // start camera if normal record mode, or if diel mode and within time range
           // needs to be called before next startTime is calculated
-          if(recMode==MODE_NORMAL | checkCamDielTime()==1) cam_start();
+          if(recMode==MODE_NORMAL | checkCamDielTime(0)==1) cam_start();
         }
 
-        // get current stop time and calculate next startTime
+        // set current stop time and calculate next startTime
         stopTime = startTime + rec_dur;
         startTime = stopTime + rec_int;
-        if ((camFlag==0) & (recMode==MODE_DIEL)) checkDielTime();
+        if (camFlag==0 & recMode==MODE_DIEL) setDielTime(); // this will only do diel record for camera, not audio
+        if (camFlag==1 & recMode==MODE_DIEL & rec_int==0) setDielTime();  // this will set diel record for audio and camera if continuous recording
 
         Serial.print("Current Time: ");
         printTime(getTeensy3Time());
@@ -450,18 +455,9 @@ void loop() {
       display.display();
       while(1);
     }
-
-    // Diel camera record mode, turn on camera
-    if(CAMON==3){
-      digitalWrite(CAM_SW, LOW);
-      CAMON=4;
-    }
-    if(CAMON==4){
-      cam_start();
-    }
     
     if(buf_count >= nbufs_per_file){       // time to stop?
-      if(rec_int == 0){
+      if(rec_int == 0 & recMode==MODE_NORMAL | (recMode==MODE_DIEL) & (getTeensy3Time()<stopTime)){
         frec.close();
         checkSD();
         FileInit();  // make a new file
@@ -469,20 +465,6 @@ void loop() {
         if(printDiags) {
           Serial.print("Audio Mem: ");
           Serial.println(AudioMemoryUsageMax());
-        }
-
-        // deal with camera in diel mode
-        if(camFlag==1){
-          if(recMode==MODE_DIEL & checkCamDielTime()==1){
-            if(CAMON==0)
-              digitalWrite(CAM_SW, HIGH);  // start of button press to turn on. Will turn off button press in main loop
-              delay(50);
-              CAMON=3;
-          }
-          // if recording but should turn off camera
-          if(recMode==MODE_DIEL & checkCamDielTime()==0 & CAMON==2){
-            cam_off();
-          }
         }
       }
       else{
@@ -519,7 +501,7 @@ void loop() {
 
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
             delay(300);  // give time for Serial to reconnect to USB
-            if(camFlag & checkCamDielTime()) cam_wake();
+            if(camFlag) cam_wake();
             AudioInit(isf);
             
             //audio_power_up();  // when use audio_power_down() before sleeping, does not always get LRCLK. This did not fix.  
@@ -863,7 +845,7 @@ void checkSD(){
   }
 }
 
-void checkDielTime(){
+void setDielTime(){
   unsigned int startMinutes = (startHour * 60) + (startMinute);
   unsigned int endMinutes = (endHour * 60) + (endMinute );
   unsigned int startTimeMinutes =  (hour(startTime) * 60) + (minute(startTime));
@@ -904,12 +886,12 @@ void checkDielTime(){
   }
 }
 
-boolean checkCamDielTime(){
+boolean checkCamDielTime(int offsetMinutes){
   
   boolean startCam = 0;
   unsigned int startMinutes = (startHour * 60) + (startMinute);
   unsigned int endMinutes = (endHour * 60) + (endMinute );
-  unsigned int currentTimeMinutes = (hour(startTime) * 60) + minute(startTime);
+  unsigned int currentTimeMinutes = (hour(startTime) * 60) + minute(startTime) + offsetMinutes;
 
   if(recMode==MODE_NORMAL) return 1;  // normal mode; always record
 
