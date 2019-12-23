@@ -2,24 +2,23 @@
 // LS1 acoustic recorder
 //
 // Loggerhead Instruments
-// 2016-2018
+// 2016-2019
 // David Mann
 
 // 
 // Modified from PJRC audio code
 // http://www.pjrc.com/store/teensy3_audio.html
 //
-// Compile with 72 MHz Fastest
+// Compile with 96 MHz Fastest
 
 // Modified by WMXZ 15-05-2018 for SdFS anf multiple sampling frequencies
 // Optionally uses SdFS from Bill Greiman https://github.com/greiman/SdFs; but has higher current draw in sleep
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2019-08-16";
+char codeVersion[12] = "2019-12-23";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
-int camFlag = 1;
-#define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
+int camFlag = 0;
 #define MQ 100 // to be used with LHI record queue (modified local version)
 int roundSeconds = 60;//start time modulo to nearest roundSeconds
 int wakeahead = 5;  //wake from snooze to give hydrophone and camera time to power up
@@ -30,22 +29,12 @@ int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
 #include "LHI_record_queue.h"
 #include "control_sgtl5000.h"
 
-//#include <SerialFlash.h>
-#if USE_SDFS==0
-  #include "input_i2s.h"
-//  #include "LHI_record_queue.h"
-//  #include "control_sgtl5000.h"
-#else
-  #include <Audio.h>  //this also includes SD.h from lines 89 & 90
-#endif
+#include <Audio.h>  //this also includes SD.h from lines 89 & 90
+
 #include <Wire.h>
 #include <SPI.h>
-#if USE_SDFS==1
-  #include "SdFs.h"
-#else
-  #include "SdFat.h"
-#endif
-#include "amx32.h"
+#include "SdFat.h"
+
 
 #include <Snooze.h>  //using https://github.com/duff2013/Snooze; uncomment line 62 #define USE_HIBERNATE
 
@@ -53,7 +42,6 @@ int noDC = 0; // 0 = freezeDC offset; 1 = remove DC offset; 2 = bypass
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <EEPROM.h>
-//#include <TimerOne.h>
 
 #define CPU_RESTART_ADDR (uint32_t *)0xE000ED0C
 #define CPU_RESTART_VAL 0x5FA0004
@@ -67,8 +55,6 @@ Adafruit_SSD1306 display(OLED_RESET);
 #define HWSERIAL Serial1
 
 #define NREC 32 // increase disk buffer to speed up disk access
-
-
 
 static uint8_t myID[8];
 
@@ -145,10 +131,10 @@ boolean audioFlag = 1;
 boolean LEDSON=1;
 boolean introperiod=1;  //flag for introductory period; used for keeping LED on for a little while
 
-int32_t lhi_fsamps[7] = {8000, 16000, 32000, 44100, 48000, 96000, 192000};
-#define I_SAMP 6   // 0 is 8 kHz; 1 is 16 kHz; 2 is 32 kHz; 3 is 44.1 kHz; 4 is 48 kHz; 5 is 96 kHz; 6 is 192 kHz
+int32_t lhi_fsamps[9] = {8000, 16000, 32000, 44100, 48000, 96000, 200000, 250000, 300000};
+#define I_SAMP 4   // 0 is 8 kHz; 1 is 16 kHz; 2 is 32 kHz; 3 is 44.1 kHz; 4 is 48 kHz; 5 is 96 kHz; 6 is 192 kHz
 
-float audio_srate = lhi_fsamps[I_SAMP];//44100.0;
+float audio_srate = lhi_fsamps[I_SAMP];
 int isf = I_SAMP;
 
 //WMXZ float audioIntervalSec = 256.0 / audio_srate; //buffer interval in seconds
@@ -176,15 +162,43 @@ SnoozeAudio snooze_audio;
 SnoozeBlock config_teensy32(snooze_audio, alarm);
 
 
-// The file where data is recorded
-#if USE_SDFS==1
-  FsFile frec;
-  SdFs sd;
-#else
-  File frec;
-  SdFat sd;
-  //SdFile file; // not used(WMXZ)
-#endif
+// SD_FAT_TYPE = 0 for SdFat/File as defined in SdFatConfig.h,
+// 1 for FAT16/FAT32, 2 for exFAT, 3 for FAT16/FAT32 and exFAT.
+#define SD_FAT_TYPE 3
+const uint8_t SD_CS_PIN = 10;
+#define SPI_CLOCK SD_SCK_MHZ(50)
+
+// Try to select the best SD card configuration.
+#if HAS_SDIO_CLASS
+#define SD_CONFIG SdioConfig(FIFO_SDIO)
+#elif ENABLE_DEDICATED_SPI
+#define SD_CONFIG SdSpiConfig(SD_CS_PIN, DEDICATED_SPI, SPI_CLOCK)
+#else  // HAS_SDIO_CLASS
+#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SPI_CLOCK)
+#endif  // HAS_SDIO_CLASS
+
+// Set PRE_ALLOCATE true to pre-allocate file clusters.
+const bool PRE_ALLOCATE = true;
+
+// Set SKIP_FIRST_LATENCY true if the first read/write to the SD can
+// be avoid by writing a file header or reading the first record.
+const bool SKIP_FIRST_LATENCY = true;
+
+#if SD_FAT_TYPE == 0
+SdFat sd;
+File file;
+#elif SD_FAT_TYPE == 1
+SdFat32 sd;
+File32 file;
+#elif SD_FAT_TYPE == 2
+SdExFat sd;
+ExFile file;
+#elif SD_FAT_TYPE == 3
+SdFs sd;
+FsFile file;
+#else  // SD_FAT_TYPE
+#error Invalid SD_FAT_TYPE
+#endif  // SD_FAT_TYPE
 
 typedef struct {
     char    rId[4];
@@ -206,6 +220,17 @@ HdrStruct wav_hdr;
 
 unsigned char prev_dtr = 0;
 
+struct TIME_HEAD
+{
+  byte  sec;  
+  byte  minute;  
+  byte  hour;  
+  byte  day;  
+  byte  month;  
+    byte NU[3];
+  int16_t year;  
+  int16_t tzOffset; //offset from GMT 
+};
 
 void setup() {
   read_myID();
@@ -253,13 +278,11 @@ void setup() {
   digitalWrite(CAM_SW, LOW);
   if(camFlag==1) wakeahead = 30; // give camera time to boot
   
-  
   //setup display and controls
   pinMode(UP, INPUT_PULLUP);
   pinMode(DOWN, INPUT_PULLUP);
   pinMode(SELECT, INPUT_PULLUP);
   
-
   //setSyncProvider(getTeensy3Time); //use Teensy RTC to keep time
   t = getTeensy3Time();
   if (t < 1451606400) Teensy3Clock.set(1451606400);
@@ -268,47 +291,18 @@ void setup() {
   delay(140);
   cDisplay();
   display.println("Loggerhead");
-//  Serial.println("Loggerhead");
-//  display.println("USB <->");
   display.display();
-  // Check for external USB connection to microSD
-// while(digitalRead(usbSense)){
-//    delay(500);
-//  }
 
-  // Power down USB if not using Serial monitor
-//  if (printDiags==0){
-//      usbDisable();
-//  }
 
   cDisplay();
   display.println("Loggerhead");
   display.display();
   
-//  // Initialize the SD card
-//  SPI.setMOSI(7);
-//  SPI.setSCK(14);
-//  if (!(sd.begin(CS1))) {
-//    // stop here if no SD card, but print a message
-//    Serial.println("Unable to access the SD card");
-//    
-//    while (1) {
-//      cDisplay();
-//      display.println("SD error. Restart.");
-//      displayClock(getTeensy3Time(), BOTTOM);
-//      display.display();
-//      delay(1000);  
-//      //resetFunc();
-//    }
-//  }
-  //SdFile::dateTimeCallback(file_date_time);
-  
+
   // Audio connections require memory, and the record queue
   // uses this memory to buffer incoming audio.
   // initialize now to estimate DC offset during setup
   AudioMemory(MQ+10);
-  
-
   
   audio_srate = lhi_fsamps[isf];
 //WMXZ  audioIntervalSec = 256.0 / audio_srate; //buffer interval in seconds
@@ -458,9 +452,9 @@ void loop() {
       // update wav file header
       wav_hdr.rLen = 36 + buf_count * 256 * 2;
       wav_hdr.dLen = buf_count * 256 * 2;
-      frec.seek(0);
-      frec.write((uint8_t *)&wav_hdr, 44);
-      frec.close();
+      file.seek(0);
+      file.write((uint8_t *)&wav_hdr, 44);
+      file.close();
       if(camFlag) cam_off(); //camera off
       display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
       delay(100);
@@ -474,7 +468,7 @@ void loop() {
     
     if(buf_count >= nbufs_per_file){       // time to stop?
       if(((rec_int == 0) & (recMode==MODE_NORMAL)) | ((rec_int == 0) & (recMode==MODE_DIEL) & (getTeensy3Time()<stopTime))){
-        frec.close();
+        file.close();
         checkSD();
         FileInit();  // make a new file
         buf_count = 0;
@@ -558,7 +552,7 @@ void continueRecording() {
       memcpy(ptr+256, queue1.readBuffer(), 256);
       queue1.freeBuffer();
     }
-    if(frec.write(buffer, NREC*512)==-1) resetFunc(); //audio to .wav file
+    if(file.write(buffer, NREC*512)==-1) resetFunc(); //audio to .wav file
       
     buf_count += NREC;
 //WMXZ    audioIntervalCount += NREC;
@@ -578,8 +572,8 @@ void stopRecording() {
   queue1.end();
   //queue1.clear();
   AudioMemoryUsageMaxReset();
-  //frec.timestamp(T_WRITE,(uint16_t) year(t),month(t),day(t),hour(t),minute(t),second);
-  frec.close();
+  //file.timestamp(T_WRITE,(uint16_t) year(t),month(t),day(t),hour(t),minute(t),second);
+  file.close();
   delay(100);
 }
 
@@ -617,54 +611,51 @@ void FileInit()
    
   sd.chdir(); // only to be sure to start from root
   #if USE_SDFS==1
-    if(FsFile logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+    if(file.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
   #else
-    if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+    if(file.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
   #endif
-      logFile.print(filename);
-      logFile.print(',');
+      file.print(filename);
+      file.print(',');
       for(int n=0; n<8; n++){
-        logFile.print(myID[n]);
+        file.print(myID[n]);
       }
-      logFile.print(',');
-      logFile.print(gainDb); 
-      logFile.print(',');
-      logFile.print(voltage); 
-      logFile.print(',');
-      logFile.println(codeVersion);
+      file.print(',');
+      file.print(gainDb); 
+      file.print(',');
+      file.print(voltage); 
+      file.print(',');
+      file.println(codeVersion);
       if(voltage < 3.1){
         if (camFlag){
           cam_off();
           camFlag = 0;
-          logFile.println("Camera off.");
+          file.println("Camera off.");
         }
       }
       if(voltage < 3.0){
-        logFile.println("Stopping because Voltage less than 3.0 V");
-        logFile.close();  
+        file.println("Stopping because Voltage less than 3.0 V");
+        file.close();  
         // low voltage hang but keep checking voltage
         while(readVoltage() < 3.3){
             delay(30000);
         }
         resetFunc(); //reset so start timing correctly again
       }
-      logFile.close();
+      file.close();
    }
    else{
     if(printDiags) Serial.print("Log open fail.");
     resetFunc();
    }
 
-    
    sd.chdir(dirname);
-   frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
    Serial.println(filename);
-   
-   while (!frec){
+   while (!file.open(filename, O_WRITE | O_CREAT | O_EXCL)){
     file_count += 1;
     sprintf(filename,"F%06d.wav",file_count); //if can't open just use count
     sd.chdir(dirname);
-    frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
+    file.open(filename, O_WRITE | O_CREAT | O_EXCL);
     Serial.println(filename);
     delay(10);
     if(file_count>1000) resetFunc(); // give up after many tries
@@ -687,7 +678,7 @@ void FileInit()
     wav_hdr.rLen = 36 + nbufs_per_file * 256 * 2;
     wav_hdr.dLen = nbufs_per_file * 256 * 2;
   
-    frec.write((uint8_t *)&wav_hdr, 44);
+    file.write((uint8_t *)&wav_hdr, 44);
 
   Serial.print("Buffers: ");
   Serial.println(nbufs_per_file);
@@ -697,12 +688,12 @@ void logFileHeader(){
 
    sd.chdir(); // only to be sure to star from root
 #if USE_SDFS==1
-  if(FsFile logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+  if(file.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
 #else
-  if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+  if(file.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
 #endif
-      logFile.println("filename, ID, gain (dB), Voltage, Version");
-      logFile.close();
+      file.println("filename, ID, gain (dB), Voltage, Version");
+      file.close();
   }
 }
 
@@ -782,8 +773,8 @@ unsigned long RTCToUNIXTime(TIME_HEAD *tm){
     Ticks += (tm->day - 1) * SECONDS_IN_DAY;
 
     // Calculate Time Ticks CHANGES ARE HERE
-    Ticks += (ULONG)tm->hour * SECONDS_IN_HOUR;
-    Ticks += (ULONG)tm->minute * SECONDS_IN_MINUTE;
+    Ticks += (unsigned long)tm->hour * SECONDS_IN_HOUR;
+    Ticks += (unsigned long)tm->minute * SECONDS_IN_MINUTE;
     Ticks += tm->sec;
 
     return Ticks;
@@ -938,4 +929,3 @@ boolean checkCamDielTime(int offsetMinutes){
   }
   return startCam;
 }
-

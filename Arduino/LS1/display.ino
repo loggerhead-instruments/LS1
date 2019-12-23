@@ -67,7 +67,7 @@ void manualSettings(){
       display.print(n + 1); display.print("    ");
       display.display();
 
-      if(sd.begin(chipSelect[n], SD_SCK_MHZ(50))){
+      if(sd.begin(chipSelect[n])){
 
         int32_t volFree = sd.vol()->freeClusterCount();
         Serial.print("volFree:");
@@ -593,4 +593,3 @@ void writeEEPROM(){
   EEPROM.write(14, nBatPacks); //byte
   EEPROM.write(15, gainSetting); //byte
 }
-

@@ -35,7 +35,7 @@ int ProcCmd(char *pCmd)
          NewTime.day = tday;
          NewTime.month = tmonth;
          NewTime.year = tyear-2000;
-         ULONG newtime=RTCToUNIXTime(&NewTime);  //get new time in seconds
+         unsigned long newtime=RTCToUNIXTime(&NewTime);  //get new time in seconds
          startTime=RTCToUNIXTime(&NewTime);
          Teensy3Clock.set(newtime); 
          Serial.print("Clock Set: ");
@@ -109,7 +109,7 @@ boolean LoadScript()
 
   // Read card setup.txt file to set date and time, recording interval
   sd.chdir(); // only to be sure to star from root
-  file=sd.open("setup.txt");
+  file.open("setup.txt");
   if(file)
   {
     do{
@@ -141,7 +141,7 @@ boolean LoadScript()
         Serial.println(TM_byte);
         
         sd.chdir(); // only to be sure to star from root
-        file = sd.open("setup.txt", FILE_WRITE); // WMXZ check mod
+        file.open("setup.txt", FILE_WRITE); // WMXZ check mod
         file.seek(TM_byte);
         file.print("//");
         file.close();
@@ -157,7 +157,3 @@ boolean LoadScript()
   }
  return 1;	
 }
-
-
-
-
