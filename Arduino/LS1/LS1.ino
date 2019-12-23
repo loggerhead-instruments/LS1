@@ -132,10 +132,10 @@ boolean LEDSON=1;
 boolean introperiod=1;  //flag for introductory period; used for keeping LED on for a little while
 
 int32_t lhi_fsamps[9] = {8000, 16000, 32000, 44100, 48000, 96000, 200000, 250000, 300000};
-#define I_SAMP 4   // 0 is 8 kHz; 1 is 16 kHz; 2 is 32 kHz; 3 is 44.1 kHz; 4 is 48 kHz; 5 is 96 kHz; 6 is 192 kHz
+#define I_SAMP 8   // 0 is 8 kHz; 1 is 16 kHz; 2 is 32 kHz; 3 is 44.1 kHz; 4 is 48 kHz; 5 is 96 kHz; 6 is 192 kHz
 
 float audio_srate = lhi_fsamps[I_SAMP];
-int isf = I_SAMP;
+int isf = 4; // default to 48 kHz
 
 //WMXZ float audioIntervalSec = 256.0 / audio_srate; //buffer interval in seconds
 //WMXZ unsigned int audioIntervalCount = 0;
@@ -252,9 +252,9 @@ void setup() {
   RTC_CR = RTC_CR_SC16P | RTC_CR_SC8P | RTC_CR_SC2P | RTC_CR_OSCE;
   delay(100);
 
-//  Serial.println(RTC_SR,HEX);
-//  Serial.println(RTC_CR,HEX);
-//  Serial.println(RTC_LR,HEX);
+  Serial.println(RTC_SR,HEX);
+  Serial.println(RTC_CR,HEX);
+  Serial.println(RTC_LR,HEX);
 
   Serial.println(RTC_TSR);
   delay(1000);
