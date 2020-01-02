@@ -7,6 +7,7 @@ float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries shoul
 csd_t m_csd;
 
 
+
 /* DISPLAY FUNCTIONS
  *  
  */
@@ -35,11 +36,12 @@ void printZero(int val){
 #define setSecond 8
 #define setFsamp 9
 #define setBatPack 10
-#define setMode 11
-#define setStartHour 12
-#define setStartMinute 13
-#define setEndHour 14
-#define setEndMinute 15
+#define setGain 11
+#define setMode 12
+#define setStartHour 13
+#define setStartMinute 14
+#define setEndHour 15
+#define setEndMinute 16
 
 
 void manualSettings(){
@@ -180,7 +182,7 @@ void manualSettings(){
       while(digitalRead(SELECT)==0){ // wait until let go of button
         delay(10);
       }
-      if((recMode==MODE_NORMAL & curSetting>11) | (recMode==MODE_DIEL & curSetting>15)) curSetting = 0;
+      if((recMode==MODE_NORMAL & curSetting>12) | (recMode==MODE_DIEL & curSetting>16)) curSetting = 0;
    }
 
     cDisplay();
@@ -219,6 +221,12 @@ void manualSettings(){
         display.print("Slp:");
         display.print(rec_int);
         display.println("s");
+        break;
+      case setGain:
+        gainSetting = updateVal(gainSetting, 0, 15);
+        calcGain();
+        display.print("Gain:");
+        display.print(gainSetting);
         break;
       case setYear:
         oldYear = year(t);
