@@ -6,7 +6,27 @@ float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries shoul
 
 csd_t m_csd;
 
+int curMenuItem = 0;
+#define maxMenuItem 8
+char *menuItem[] = {"Start",
+                     "Record",
+                     "Sleep",
+                     "Rate",
+                     "Gain",
+                     "Time",
+                     "Mode",
+                     "Diel Time"
+                     };
 
+char *helpText[] = {"ENTER:Start RecordingUP/DN:scroll menu",
+                    "ENTER:Set Record Dur\nUP/DN:scroll menu",
+                    "ENTER:Set Sleep Dur\nUP/DN:scroll menu",
+                    "ENTER:Set Sample RateUP/DN:scroll menu",
+                    "ENTER:Set Gain (dB)\nUP/DN:scroll menu",
+                    "ENTER:Set Date/Time\nUP/DN:scroll menu",
+                    "ENTER:Set Mode\nUP/DN:scroll menu",
+                    "ENTER:Set Diel Time\nUP/DN:scroll menu"
+                    };
 
 /* DISPLAY FUNCTIONS
  *  
@@ -25,24 +45,14 @@ void printZero(int val){
   if(val<10) display.print('0');
 }
 
-#define noSet 0
+#define setStart 0
 #define setRecDur 1
 #define setRecSleep 2
-#define setYear 3
-#define setMonth 4
-#define setDay 5
-#define setHour 6
-#define setMinute 7
-#define setSecond 8
-#define setFsamp 9
-#define setBatPack 10
-#define setGain 11
-#define setMode 12
-#define setStartHour 13
-#define setStartMinute 14
-#define setEndHour 15
-#define setEndMinute 16
-
+#define setFsamp 3
+#define setGain 4
+#define setDateTime 5
+#define setMode 6
+#define setDielTime 7
 
 void manualSettings(){
   boolean startRec = 0, startUp, startDown;
@@ -160,17 +170,261 @@ void manualSettings(){
     EEPROM.write(15, gainSetting); //byte
   }
 
-//  // if LOG.CSV present, skip manual settings
-//  #if USE_SDFS==1
-//    FsFile logFile = sd.open("LOG.CSV");
-//  #else
-//    File logFile = sd.open("LOG.CSV");
-//  #endif
-//  if(logFile){
-//    startRec = 1;
-//    logFile.close();
-//  }
-  
+  // Main Menu Loop
+   while(startRec==0){
+    static int newYear, newMonth, newDay, newHour, newMinute, newSecond, oldYear, oldMonth, oldDay, oldHour, oldMinute, oldSecond;
+    t = getTeensy3Time();
+    if (t - autoStartTime > 600) startRec = 1; //autostart if no activity for 10 minutes
+    
+    
+    // Check for button press
+    boolean selectVal = digitalRead(UP);
+    if(selectVal==0){
+      while(digitalRead(UP)==0){
+        delay(10); // wait until let go
+      }
+      curMenuItem++;
+      if(curMenuItem>=maxMenuItem) curMenuItem = 0;
+    }
+    
+    selectVal = digitalRead(DOWN);
+    if(selectVal==0){
+      while(digitalRead(DOWN)==0){
+        delay(10); // wait until let go
+      }
+      curMenuItem--;
+      if(curMenuItem<0) curMenuItem = maxMenuItem - 1;
+    }
+
+
+    // Enter pressed from main menu
+    selectVal = digitalRead(SELECT);
+    if(selectVal==0){
+      while(digitalRead(SELECT)==0){ // wait until let go of button
+        delay(10);
+      }
+
+      // Process enter
+      switch (curMenuItem){
+        case setStart:
+            cDisplay();
+            writeEEPROM(); //save settings
+            display.println("Starting..");
+            display.setTextSize(1);
+            display.print("Press UP+DN to Stop");
+            display.display();
+            delay(2000);
+            startRec = 1;  //start recording 
+            break;
+        case setRecDur:
+            while(digitalRead(SELECT)==1){
+              rec_dur = updateVal(rec_dur, 1, 3600);
+              cDisplay();
+              display.println("Record:");
+              display.print(rec_dur);
+              display.println("s");
+              displaySettings();
+              displayVoltage();
+              display.display();
+              delay(2);
+            }
+            while(digitalRead(SELECT)==0); // wait to let go
+            curMenuItem = setStart;
+            break;
+          
+        case setRecSleep:
+          while(digitalRead(SELECT)==1){
+            rec_int = updateVal(rec_int, 0, 3600 * 24);
+            cDisplay();
+            display.println("Sleep:");
+            display.print(rec_int);
+            display.println("s");
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+          curMenuItem = setStart;
+          break;
+
+        case setFsamp:
+          while(digitalRead(SELECT)==1){
+            isf = updateVal(isf, 0, 8);
+            cDisplay();
+            display.println("Rate");
+            display.printf("%.1f kHz",lhi_fsamps[isf]/1000.0f);
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+          curMenuItem = setStart;
+          break;
+
+        case setGain:
+          while(digitalRead(SELECT)==1){
+            gainSetting = updateVal(gainSetting, 0, 15);
+            calcGain();
+            cDisplay();
+            display.print("Gain:");
+            display.println(gainSetting);
+            display.print(gainDb);
+            display.print("dB");
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+          curMenuItem = setStart;
+          break;
+          
+        case setDateTime:
+          while(digitalRead(SELECT)==1){
+            oldYear = year(t);
+            newYear = updateVal(oldYear,2000, 2100);
+            if(oldYear!=newYear) setTeensyTime(hour(t), minute(t), second(t), day(t), month(t), newYear);
+            cDisplay();
+            display.println("Year:");
+            display.print(year(getTeensy3Time()));
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+          
+          while(digitalRead(SELECT)==1){
+            oldMonth = month(t);
+            newMonth = updateVal(oldMonth, 1, 12);
+            if(oldMonth != newMonth) setTeensyTime(hour(t), minute(t), second(t), day(t), newMonth, year(t));
+            cDisplay();
+            display.println("Month:");
+            display.print(month(getTeensy3Time()));
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+
+          while(digitalRead(SELECT)==1){
+            oldDay = day(t);
+            newDay = updateVal(oldDay, 1, 31);
+            if(oldDay!=newDay) setTeensyTime(hour(t), minute(t), second(t), newDay, month(t), year(t));
+            cDisplay();
+            display.println("Day:");
+            display.print(day(getTeensy3Time()));
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+
+          while(digitalRead(SELECT)==1){
+            oldHour = hour(t);
+            newHour = updateVal(oldHour, 0, 23);
+            if(oldHour!=newHour) setTeensyTime(newHour, minute(t), second(t), day(t), month(t), year(t));
+            cDisplay();
+            display.println("Hour:");
+            display.print(hour(getTeensy3Time()));
+            displaySettings();  
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+
+          while(digitalRead(SELECT)==1){
+            oldMinute = minute(t);
+            newMinute = updateVal(oldMinute, 0, 59);
+            if(oldMinute!=newMinute) setTeensyTime(hour(t), newMinute, second(t), day(t), month(t), year(t));
+            cDisplay();
+            display.println("Minute:");
+            display.print(minute(getTeensy3Time()));
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+
+          while(digitalRead(SELECT)==1){
+            oldSecond = second(t);
+            newSecond = updateVal(oldSecond, 0, 59);
+            if(oldSecond!=newSecond) setTeensyTime(hour(t), minute(t), newSecond, day(t), month(t), year(t));
+            cDisplay();
+            display.println("Second:");
+            display.print(second(getTeensy3Time()));
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+          curMenuItem = setStart;
+          break;
+
+
+        case setMode:
+          while(digitalRead(SELECT)==1){
+            recMode = updateVal(recMode, 0, 1);
+            cDisplay();
+            display.print("Mode:");
+            if (recMode==MODE_NORMAL)  display.print("Norm");
+            if (recMode==MODE_DIEL) {
+              if(camFlag==0) display.print("Diel");
+              else
+                display.print("Diel*");
+            }
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+          curMenuItem = setStart;
+          break;
+
+        case setDielTime:
+          break;
+//                 case setStartHour:
+//        startHour = updateVal(startHour, 0, 23);
+//        display.print("Strt HH:");
+//        printZero(startHour);
+//        display.print(startHour);
+//        break;
+//      case setStartMinute:
+//        startMinute = updateVal(startMinute, 0, 59);
+//        display.print("Strt MM:");
+//        printZero(startMinute);
+//        display.print(startMinute);
+//        break;
+//      case setEndHour:
+//        endHour = updateVal(endHour, 0, 23);
+//        display.print("End HH:");
+//        printZero(endHour);
+//        display.print(endHour);
+//        break;
+//      case setEndMinute:
+//        endMinute = updateVal(endMinute, 0, 59);
+//        display.print("End MM:");
+//        printZero(endMinute);
+//        display.print(endMinute);
+//        break;
+
+       
+      }
+      
+      if (settingsChanged) {
+        writeEEPROM();
+        settingsChanged = 0;
+        autoStartTime = getTeensy3Time();  //reset autoStartTime
+      }
+    }
+
+  /*
   while(startRec==0){
     static int curSetting = noSet;
     static int newYear, newMonth, newDay, newHour, newMinute, newSecond, oldYear, oldMonth, oldDay, oldHour, oldMinute, oldSecond;
@@ -314,7 +568,12 @@ void manualSettings(){
         display.print(endMinute);
         break;
     }
+    */
+    
+    cDisplay();
+    displayMenu();
     displaySettings();
+    displayVoltage();
     displayClock(getTeensy3Time(), BOTTOM);
     display.display();
     delay(10);
@@ -382,32 +641,26 @@ void displaySettings(){
   t = getTeensy3Time();
   display.setTextSize(1);
   display.setTextColor(WHITE);
-  display.setCursor(0, 18);
-
-  display.print("Rec:");
-  display.print(rec_dur);
-  display.print("s ");
-  if(recMode==MODE_DIEL){
-    if(camFlag==0) display.print(" Diel");
-    else
-      display.print(" Diel Cam");
-  }
-  display.println();
-  
-  display.print("Sleep:");
-  display.print(rec_int);
-  display.print("s  ");
-
-  display.print(" B:");
-  display.println(nBatPacks);
-
-  display.printf("%.1f kHz",lhi_fsamps[isf]/1000.0f);
-  display.print(" ");
-  if(gainDb>0) display.print('+');
-  display.printf("%.1f",gainDb);
+  display.setCursor(0, 38);
+  display.print("Rec");
+  display.setCursor(25, 38);
+  display.print("Slp");
+  display.setCursor(50, 38);
+  display.print("kHz");
+  display.setCursor(75, 38);
   display.print("dB");
+  
+  display.setCursor(0, 46);
+  display.print(rec_dur);
+  
+  display.setCursor(25, 46);
+  display.print(rec_int);
 
-  display.setTextSize(1);
+  display.setCursor(50, 46);
+  display.printf("%.0f",lhi_fsamps[isf]/1000.0f);
+
+  display.setCursor(75, 46);
+  display.printf("%.0f",gainDb);
 
   uint32_t totalRecSeconds = 0;
 
@@ -432,7 +685,6 @@ void displaySettings(){
     dielFraction = dielMinutes / (24.0 * 60.0); // fraction of day recording in diel mode
   }
 
-  
   float recDraw = mAmpRec + ((float) camFlag * mAmpCam);
   float recFraction = ((float) rec_dur * dielFraction) / (float) (rec_dur + rec_int);
   float sleepFraction = 1 - recFraction;
@@ -483,42 +735,33 @@ void displaySettings(){
 //    Serial.println(totalRecSeconds); Serial.print(" ");
 //  Serial.println();
 
-
   float totalSecondsMemory = totalRecSeconds / recFraction;
   float totalSecondsCamMemory = 43200 / recFraction;
-  if(camFlag){
-      if(powerSeconds < totalSecondsCamMemory){
+ 
+  if(powerSeconds < totalSecondsMemory){
    // displayClock(getTeensy3Time() + powerSeconds, 45, 0);
-    display.setCursor(0, 46);
-    display.print("Battery Limit:");
-    display.print(powerSeconds / 86400);
+    display.setCursor(92, 38);
+    display.print("Lim B");
+    display.setCursor(92, 46);
+    display.print((int) powerSeconds / 86400);
     display.print("d");
   }
   else{
   //  displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
-    display.setCursor(0, 46);
-    display.print("Cam Limit:");
-    display.print(totalSecondsCamMemory / 86400);
+    display.setCursor(92, 38);
+    display.print("Lim B");
+    display.setCursor(92, 46);
+    display.print((int)totalSecondsMemory / 86400);
     display.print("d");
-  }
-  }
-  else{
-      if(powerSeconds < totalSecondsMemory){
-   // displayClock(getTeensy3Time() + powerSeconds, 45, 0);
-    display.setCursor(0, 46);
-    display.print("Battery Limit:");
-    display.print(powerSeconds / 86400);
-    display.print("d");
-  }
-  else{
-  //  displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
-    display.setCursor(0, 46);
-    display.print("Memory Limit:");
-    display.print(totalSecondsMemory / 86400);
-    display.print("d");
-  }
   }
 
+  display.setCursor(115, BOTTOM);
+  if(recMode==MODE_DIEL){
+    display.print("D");
+  }
+  else{
+    display.print("N");
+  }
 }
 
 
@@ -600,4 +843,18 @@ void writeEEPROM(){
   EEPROM.write(13, isf); //byte
   EEPROM.write(14, nBatPacks); //byte
   EEPROM.write(15, gainSetting); //byte
+}
+
+void displayMenu(){
+  display.setTextSize(2);
+  display.println(menuItem[curMenuItem]);
+  display.setTextSize(1);
+  display.println(helpText[curMenuItem]);
+}
+
+void displayVoltage(){
+  display.setTextSize(1);
+  display.setCursor(100, 0);
+  display.print(readVoltage(),1);
+  display.print("V");
 }
