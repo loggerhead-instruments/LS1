@@ -7,7 +7,7 @@ float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries shoul
 csd_t m_csd;
 
 int curMenuItem = 0;
-#define maxMenuItem 8
+volatile int maxMenuItem = 8;
 char *menuItem[] = {"Start",
                      "Record",
                      "Sleep",
@@ -179,6 +179,12 @@ void manualSettings(){
     
     // Check for button press
     boolean selectVal = digitalRead(UP);
+    if(recMode==MODE_DIEL){
+      maxMenuItem = 8;
+    }
+    else{
+      maxMenuItem = 7;
+    }
     if(selectVal==0){
       while(digitalRead(UP)==0){
         delay(10); // wait until let go
@@ -438,32 +444,6 @@ void manualSettings(){
 
           curMenuItem = setStart;
           break;
-
-//                 case setStartHour:
-//        startHour = updateVal(startHour, 0, 23);
-//        display.print("Strt HH:");
-//        printZero(startHour);
-//        display.print(startHour);
-//        break;
-//      case setStartMinute:
-//        startMinute = updateVal(startMinute, 0, 59);
-//        display.print("Strt MM:");
-//        printZero(startMinute);
-//        display.print(startMinute);
-//        break;
-//      case setEndHour:
-//        endHour = updateVal(endHour, 0, 23);
-//        display.print("End HH:");
-//        printZero(endHour);
-//        display.print(endHour);
-//        break;
-//      case setEndMinute:
-//        endMinute = updateVal(endMinute, 0, 59);
-//        display.print("End MM:");
-//        printZero(endMinute);
-//        display.print(endMinute);
-//        break;
-
        
       }
       
