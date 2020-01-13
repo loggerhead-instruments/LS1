@@ -2,7 +2,7 @@
 // LS1 acoustic recorder
 //
 // Loggerhead Instruments
-// 2016-2019
+// 2016-2020
 // David Mann
 
 // 
@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2019-12-23";
+char codeVersion[12] = "2020-01-13";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define MQ 100 // to be used with LHI record queue (modified local version)

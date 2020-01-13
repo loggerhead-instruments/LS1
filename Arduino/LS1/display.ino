@@ -387,8 +387,58 @@ void manualSettings(){
           curMenuItem = setStart;
           break;
 
-        case setDielTime:
+        case setDielTime:         
+          while(digitalRead(SELECT)==1){
+            startHour = updateVal(startHour, 0, 23);
+            cDisplay();
+            display.println("Strt Hr");
+            display.print(startHour);
+            displaySettings();  
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+
+          while(digitalRead(SELECT)==1){
+            startMinute = updateVal(startMinute, 0, 59);
+            cDisplay();
+            display.println("Strt Min");
+            display.print(startMinute);
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+          
+          while(digitalRead(SELECT)==1){
+            endHour = updateVal(endHour, 0, 23);
+            cDisplay();
+            display.println("End Hr");
+            display.print(endHour);
+            displaySettings();  
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+
+          while(digitalRead(SELECT)==1){
+            endMinute = updateVal(endMinute, 0, 59);
+            cDisplay();
+            display.println("End Min");
+            display.print(endMinute);
+            displaySettings();
+            displayVoltage();
+            display.display();
+            delay(2);
+          }
+          while(digitalRead(SELECT)==0); // wait to let go
+
+          curMenuItem = setStart;
           break;
+
 //                 case setStartHour:
 //        startHour = updateVal(startHour, 0, 23);
 //        display.print("Strt HH:");
