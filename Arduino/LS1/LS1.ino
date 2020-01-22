@@ -491,6 +491,10 @@ void loop() {
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
             digitalWrite(hydroPowPin, LOW); //hydrophone off
             audio_power_down();  // when this is activated, seems to occassionally have trouble restarting; no LRCLK signal or RX on Teensy
+
+            // de-select card
+            I2S0_RCSR &= ~(I2S_RCSR_RE | I2S_RCSR_BCE);
+            
             if(camFlag & (CAMON>0)) cam_off(); //camera off if it got turned on
             if(printDiags){
               Serial.print("Snooze HH MM SS ");

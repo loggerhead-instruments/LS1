@@ -1,5 +1,5 @@
-float mAmpRec = 49;
-float mAmpSleep = 3.4;
+float mAmpRec = 95;  // 300 kHz: SanDisk 128 GB: 75 mA; 8 kHz: 53 mA; 2 mA if pull microSD; SabDisk 1 TB: 300 kHz:95 mA 8 kHz: 37 mA; 3.8 mA sleep
+float mAmpSleep = 3.7; // 300 kHz: 18 mA; 8 kHz: 18 mA (17 mA second sleep)
 float mAmpCam = 700;
 byte nBatPacks = 4;
 float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries should be 14000
