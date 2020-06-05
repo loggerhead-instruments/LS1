@@ -1,8 +1,8 @@
-float mAmpRec = 95;  // 300 kHz: SanDisk 128 GB: 75 mA; 8 kHz: 53 mA; 2 mA if pull microSD; SabDisk 1 TB: 300 kHz:95 mA 8 kHz: 37 mA; 3.8 mA sleep
-float mAmpSleep = 3.7; // 300 kHz: 18 mA; 8 kHz: 18 mA (17 mA second sleep)
+float mAmpRec = 95;  // 300 kHz: SanDisk 128 GB: 75 mA; 8 kHz: 53 mA; 2 mA if pull microSD; SanDisk 1 TB: 300 kHz:95 mA 8 kHz: 37 mA; 3.8 mA sleep
+float mAmpSleep = 3.8; // 300 kHz: 18 mA; 8 kHz: 18 mA (17 mA second sleep)
 float mAmpCam = 700;
-byte nBatPacks = 4;
-float mAhPerBat = 12000.0; // assume 12Ah per battery pack; good batteries should be 14000
+byte nBatPacks = 8;
+float mAhPerBat = 12000.0; // assume 12.0Ah per battery pack; good batteries should be 14000
 
 csd_t m_csd;
 
@@ -767,7 +767,13 @@ void displaySettings(){
 
   float totalSecondsMemory = totalRecSeconds / recFraction;
   float totalSecondsCamMemory = 43200 / recFraction;
- 
+//
+//  Serial.print("Power Sec:");
+//  Serial.print(powerSeconds);
+//  Serial.print(" "); Serial.print((float) powerSeconds / 86400.0);
+//  Serial.print("  Mem Sec:");
+//  Serial.print(totalSecondsMemory);
+  
   if(powerSeconds < totalSecondsMemory){
    // displayClock(getTeensy3Time() + powerSeconds, 45, 0);
     display.setCursor(92, 38);
@@ -779,9 +785,9 @@ void displaySettings(){
   else{
   //  displayClock(getTeensy3Time() + totalRecSeconds + totalSleepSeconds, 45, 0);
     display.setCursor(92, 38);
-    display.print("Lim B");
+    display.print("Lim M");
     display.setCursor(92, 46);
-    display.print((int)totalSecondsMemory / 86400);
+    display.print((int) totalSecondsMemory / 86400);
     display.print("d");
   }
 
@@ -833,11 +839,11 @@ void readEEPROM(){
   endMinute = EEPROM.read(11);
   recMode = EEPROM.read(12);
   isf = EEPROM.read(13);
-  byte newBatPacks = EEPROM.read(14);
-  if(newBatPacks>0)
-  {
-    nBatPacks = newBatPacks;
-  }
+//  byte newBatPacks = EEPROM.read(14);
+//  if(newBatPacks>0)
+//  {
+//    nBatPacks = newBatPacks;
+//  }
   gainSetting = EEPROM.read(15);
 }
 

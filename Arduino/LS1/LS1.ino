@@ -16,7 +16,7 @@
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2020-01-13";
+char codeVersion[12] = "2020-06-05";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 int camFlag = 0;
 #define MQ 100 // to be used with LHI record queue (modified local version)
