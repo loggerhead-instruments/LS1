@@ -1,0 +1,37 @@
+Removed Pin From Net: NetName=VCC1 Pin=C1-2
+Removed Pin From Net: NetName=VCC1 Pin=C2-1
+Removed Pin From Net: NetName=VCC4 Pin=C29-2
+Removed Pin From Net: NetName=VCC4 Pin=C30-1
+Removed Pin From Net: NetName=VCC2 Pin=C35-2
+Removed Pin From Net: NetName=VCC2 Pin=C37-1
+Removed Pin From Net: NetName=VCC1 Pin=R3-1
+Removed Pin From Net: NetName=VCC2 Pin=R4-1
+Removed Pin From Net: NetName=VCC4 Pin=R6-1
+Removed Pin From Net: NetName=VCC1 Pin=U1-5
+Removed Pin From Net: NetName=VCC4 Pin=U7-5
+Removed Pin From Net: NetName=VCC2 Pin=U9-5
+Change Component Designator: OldDesignator=P25 NewDesignator=P?
+Added Pin To Net: NetName=VCC3 Pin=C1-2
+Added Pin To Net: NetName=VCC3 Pin=C2-1
+Added Pin To Net: NetName=VCC3 Pin=C29-2
+Added Pin To Net: NetName=VCC3 Pin=C30-1
+Added Pin To Net: NetName=VCC3 Pin=C35-2
+Added Pin To Net: NetName=VCC3 Pin=C37-1
+Added Pin To Net: NetName=VCC1 Pin=P4-4
+Added Pin To Net: NetName=VCC2 Pin=P5-4
+Added Pin To Net: NetName=VCC4 Pin=P7-4
+Added Pin To Net: NetName=VCC3 Pin=P9-1
+Added Pin To Net: NetName=VCC3 Pin=P11-1
+Added Pin To Net: NetName=VCC3 Pin=P20-1
+Added Pin To Net: NetName=VCC3 Pin=P21-1
+Added Pin To Net: NetName=VCC3 Pin=P22-1
+Added Pin To Net: NetName=VCC3 Pin=P23-1
+Added Pin To Net: NetName=VCC3 Pin=R3-1
+Added Pin To Net: NetName=VCC3 Pin=R4-1
+Added Pin To Net: NetName=VCC3 Pin=R6-1
+Added Pin To Net: NetName=VCC3 Pin=U1-5
+Added Pin To Net: NetName=VCC3 Pin=U7-5
+Added Pin To Net: NetName=VCC3 Pin=U9-5
+Change Net Name : Old Net Name=VCC3 New Net Name=VCC
+Added Pin To Net: NetName=VCC3 Pin=P6-4
+Added Net: Name=VCC3

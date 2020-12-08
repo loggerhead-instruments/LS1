@@ -1,0 +1,118 @@
+Removed Pin From Net: NetName=VIN Pin=C4-1
+Removed Pin From Net: NetName=VIN Pin=C15-1
+Removed Pin From Net: NetName=VSENS Pin=P1-16
+Removed Pin From Net: NetName=VIN Pin=P12-1
+Removed Pin From Net: NetName=DGND Pin=P12-2
+Removed Pin From Net: NetName=VIN Pin=U1-1
+Removed Pin From Net: NetName=VIN Pin=U1-3
+Removed Pin From Net: NetName=VIN Pin=U4-1
+Removed Member From Class: ClassName=LS1 Member=P12
+Removed Member From Class: ClassName=LS1 Member=P18
+Change Component DesignItemId : Designator=P12 Old DesignItemId=Header 3 New DesignItemId=Header 2
+Change Component Footprint: Designator=P12 Old Footprint=HDR1X3 New Footprint=HDR1X2
+Change Component Comment : Designator=P12 Old Comment=Header 3 New Comment=Header 2
+Added Component: Designator=C29(Tant0805)
+Added Component: Designator=C30(0402)
+Added Component: Designator=C31(Tant0805)
+Added Component: Designator=C32(0402)
+Added Component: Designator=C33(0402)
+Added Component: Designator=C34(0402)
+Added Component: Designator=C35(Tant0805)
+Added Component: Designator=C36(0402)
+Added Component: Designator=C37(0402)
+Added Component: Designator=C38(0402)
+Added Component: Designator=C39(0402)
+Added Component: Designator=C40(0402)
+Added Component: Designator=P25(HDR1X2)
+Added Component: Designator=R7(3-0603)
+Added Component: Designator=U7(MF05A_N)
+Added Component: Designator=U8(MF05A_N)
+Added Component: Designator=U9(MF05A_N)
+Added Pin To Net: NetName=DGND Pin=C29-1
+Added Pin To Net: NetName=VCC Pin=C29-2
+Added Pin To Net: NetName=VCC Pin=C30-1
+Added Pin To Net: NetName=DGND Pin=C30-2
+Added Pin To Net: NetName=DGND Pin=C31-1
+Added Pin To Net: NetName=VCC Pin=C31-2
+Added Pin To Net: NetName=DGND Pin=C32-2
+Added Pin To Net: NetName=VCC Pin=C33-1
+Added Pin To Net: NetName=DGND Pin=C33-2
+Added Pin To Net: NetName=DGND Pin=C34-2
+Added Pin To Net: NetName=DGND Pin=C35-1
+Added Pin To Net: NetName=VCC Pin=C35-2
+Added Pin To Net: NetName=DGND Pin=C36-2
+Added Pin To Net: NetName=VCC Pin=C37-1
+Added Pin To Net: NetName=DGND Pin=C37-2
+Added Pin To Net: NetName=DGND Pin=C38-2
+Added Pin To Net: NetName=DGND Pin=C39-2
+Added Pin To Net: NetName=DGND Pin=C40-2
+Added Pin To Net: NetName=VSENS Pin=P1-A14
+Added Pin To Net: NetName=AGND Pin=P12-1
+Added Pin To Net: NetName=DGND Pin=P25-1
+Added Pin To Net: NetName=V_BATT Pin=P25-2
+Added Pin To Net: NetName=VIN Pin=R7-1
+Added Pin To Net: NetName=DGND Pin=U7-2
+Added Pin To Net: NetName=VCC Pin=U7-5
+Added Pin To Net: NetName=DGND Pin=U8-2
+Added Pin To Net: NetName=VCC Pin=U8-5
+Added Pin To Net: NetName=DGND Pin=U9-2
+Added Pin To Net: NetName=VCC Pin=U9-5
+Added Pin To Net: NetName=NetC4_1 Pin=C4-1
+Added Pin To Net: NetName=NetC4_1 Pin=U1-1
+Added Net: Name=NetC4_1
+Added Pin To Net: NetName=NetC32_1 Pin=C32-1
+Added Pin To Net: NetName=NetC32_1 Pin=U7-1
+Added Net: Name=NetC32_1
+Added Pin To Net: NetName=NetC34_1 Pin=C34-1
+Added Pin To Net: NetName=NetC34_1 Pin=U8-1
+Added Net: Name=NetC34_1
+Added Pin To Net: NetName=NetC36_1 Pin=C36-1
+Added Pin To Net: NetName=NetC36_1 Pin=U7-4
+Added Net: Name=NetC36_1
+Added Pin To Net: NetName=NetC38_1 Pin=C38-1
+Added Pin To Net: NetName=NetC38_1 Pin=U9-1
+Added Net: Name=NetC38_1
+Added Pin To Net: NetName=NetC39_1 Pin=C39-1
+Added Pin To Net: NetName=NetC39_1 Pin=U8-4
+Added Net: Name=NetC39_1
+Added Pin To Net: NetName=NetC40_1 Pin=C40-1
+Added Pin To Net: NetName=NetC40_1 Pin=U9-4
+Added Net: Name=NetC40_1
+Added Pin To Net: NetName=POW1 Pin=P1-5
+Added Pin To Net: NetName=POW1 Pin=U1-3
+Added Net: Name=POW1
+Added Pin To Net: NetName=POW2 Pin=P1-6
+Added Pin To Net: NetName=POW2 Pin=U7-3
+Added Pin To Net: NetName=POW2 Pin=U8-3
+Added Pin To Net: NetName=POW2 Pin=U9-3
+Added Net: Name=POW2
+Added Pin To Net: NetName=POW3 Pin=P1-16
+Added Net: Name=POW3
+Added Pin To Net: NetName=POW4 Pin=P1-17
+Added Net: Name=POW4
+Added Pin To Net: NetName=VEXT Pin=C15-1
+Added Pin To Net: NetName=VEXT Pin=P12-2
+Added Pin To Net: NetName=VEXT Pin=R7-2
+Added Pin To Net: NetName=VEXT Pin=U4-1
+Added Net: Name=VEXT
+Added Member To Class: ClassName=LS1 Member=Component C29 10uF
+Added Member To Class: ClassName=LS1 Member=Component C30 0.1uF
+Added Member To Class: ClassName=LS1 Member=Component C31 10uF
+Added Member To Class: ClassName=LS1 Member=Component C32 1uF
+Added Member To Class: ClassName=LS1 Member=Component C33 0.1uF
+Added Member To Class: ClassName=LS1 Member=Component C34 1uF
+Added Member To Class: ClassName=LS1 Member=Component C35 10uF
+Added Member To Class: ClassName=LS1 Member=Component C36 0.01uF
+Added Member To Class: ClassName=LS1 Member=Component C37 0.1uF
+Added Member To Class: ClassName=LS1 Member=Component C38 1uF
+Added Member To Class: ClassName=LS1 Member=Component C39 0.01uF
+Added Member To Class: ClassName=LS1 Member=Component C40 0.01uF
+Added Member To Class: ClassName=LS1_audio Member=Component P12 Header 2
+Added Member To Class: ClassName=LS1_audio Member=Component P18 Header 3
+Added Member To Class: ClassName=LS1 Member=Component P25 Header 2
+Added Member To Class: ClassName=LS1_audio Member=Component R7 0X
+Added Member To Class: ClassName=LS1 Member=Component U7 LP3985IM5-3.3
+Added Member To Class: ClassName=LS1 Member=Component U8 LP3985IM5-3.3
+Added Member To Class: ClassName=LS1 Member=Component U9 LP3985IM5-3.3
+Added Room: Name=LS1
+Added Room: Name=LS1_audio

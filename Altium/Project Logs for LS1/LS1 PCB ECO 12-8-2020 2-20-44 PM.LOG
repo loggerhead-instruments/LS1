@@ -1,0 +1,6 @@
+Removed Pin From Net: NetName=POW1 Pin=P1-16
+Removed Pin From Net: NetName=POW2 Pin=P1-17
+Added Pin To Net: NetName=POW2 Pin=P1-16
+Added Pin To Net: NetName=POW1 Pin=P1-17
+Change Net Name : Old Net Name=POW3 New Net Name=POW4
+Change Net Name : Old Net Name=POW4 New Net Name=POW3
