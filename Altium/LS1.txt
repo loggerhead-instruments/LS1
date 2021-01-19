@@ -1,0 +1,10 @@
+Board Information Report
+Filename     : C:\w\LS1\Altium\LS1.PcbDoc
+Date         : 1/18/2021
+Time         : 10:34:40 AM
+Time Elapsed : 00:00:00
+
+General
+    Board Size, 3000milsx3550mils
+    Components on board, 89
+count : 2
