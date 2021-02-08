@@ -56,7 +56,6 @@ boolean readRTC()
 {
   int i = 0;
   byte buff[7];
- 
   Wire.beginTransmission(RTCAddress); 
   Wire.write(0x00);        //sends address to read from starting with seconds
   Wire.endTransmission(0); //end transmission
@@ -79,44 +78,50 @@ boolean readRTC()
       ds_day=(10*(buff[4]>>4))+((buff[4]&0x0F)); 
       ds_month=(10*(buff[5]>>4))+((buff[5]&0x0F)); 
       ds_year=(10*(buff[6]>>4))+((buff[6]&0x0F)); 
-      t = RTCToUNIXTime(ds_year, ds_month, ds_day, ds_hour, ds_minute, ds_second);  
+     // t = RTCToUNIXTime(ds_year, ds_month, ds_day, ds_hour, ds_minute, ds_second);  
+      tmElements_t tm;
+      tm.Second = ds_second;
+      tm.Minute = ds_minute;
+      tm.Hour = ds_hour;
+      tm.Day = ds_day;
+      tm.Month = ds_month;
+      tm.Year = ds_year + 30U;
+      t = makeTime(tm);
       return 1;
   }
   else return 0;
-
-  
 }
 
-// Calculates Accurate UNIX Time Based on RTC Timestamp
-unsigned long RTCToUNIXTime(byte iyear, byte imonth, byte idate, byte ihour, byte iminute, byte isecond){
-  int i;
-  unsigned const char DaysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-  unsigned long Ticks = 0;
-
-  long yearsSince = iyear + 30; // Same as iyear + 2000 - 1970
-  long numLeaps = yearsSince >> 2; // yearsSince / 4 truncated
-  
-  if((!(iyear%4)) && (imonth>2)) Ticks+=SECONDS_IN_DAY;  //dm 8/9/2012  If current year is leap, add one day
-
-  // Calculate Year Ticks
-  Ticks += (yearsSince-numLeaps)*SECONDS_IN_YEAR;
-  Ticks += numLeaps * SECONDS_IN_LEAP;
-
-  // Calculate Month Ticks
-  for(i=0; i < imonth-1; i++){
-       Ticks += DaysInMonth[i] * SECONDS_IN_DAY;
-  }
-
-  // Calculate Day Ticks
-  Ticks += idate * SECONDS_IN_DAY;
-  
-  // Calculate Time Ticks CHANGES ARE HERE
-  Ticks += (unsigned long)ihour * SECONDS_IN_HOUR;
-  Ticks += (unsigned long)iminute * SECONDS_IN_MINUTE;
-  Ticks += isecond;
-
-  return Ticks;
-}
+//// Calculates Accurate UNIX Time Based on RTC Timestamp
+//unsigned long RTCToUNIXTime(byte iyear, byte imonth, byte idate, byte ihour, byte iminute, byte isecond){
+//  int i;
+//  unsigned const char DaysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+//  unsigned long Ticks = 0;
+//
+//  long yearsSince = iyear + 30; // Same as iyear + 2000 - 1970
+//  long numLeaps = yearsSince >> 2; // yearsSince / 4 truncated
+//  
+//  if((!(iyear%4)) && (imonth>2)) Ticks+=SECONDS_IN_DAY;  //dm 8/9/2012  If current year is leap, add one day
+//
+//  // Calculate Year Ticks
+//  Ticks += (yearsSince-numLeaps)*SECONDS_IN_YEAR;
+//  Ticks += numLeaps * SECONDS_IN_LEAP;
+//
+//  // Calculate Month Ticks
+//  for(i=0; i < imonth-1; i++){
+//       Ticks += DaysInMonth[i] * SECONDS_IN_DAY;
+//  }
+//
+//  // Calculate Day Ticks
+//  Ticks += idate * SECONDS_IN_DAY;
+//  
+//  // Calculate Time Ticks CHANGES ARE HERE
+//  Ticks += (unsigned long)ihour * SECONDS_IN_HOUR;
+//  Ticks += (unsigned long)iminute * SECONDS_IN_MINUTE;
+//  Ticks += isecond;
+//
+//  return Ticks;
+//}
 
 int rtcStatus(){
   byte val[2];

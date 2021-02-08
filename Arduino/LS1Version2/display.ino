@@ -38,7 +38,6 @@ void printZero(int val){
 
 void manualSettings(){
   Serial.println("Settings");
-  Serial.flush();
   boolean startRec = 0, startUp, startDown;
   readEEPROM();
   calcGain();

@@ -22,27 +22,7 @@ int ProcCmd(char *pCmd)
           return TRUE;
 
 	switch(*pCV)
-	{                     
-		// Set of Real Time Clock
-		case ('T' + ('M'<<8)):
-		{
-         //set time
-         sscanf(&pCmd[3],"%d-%d-%d %d:%d:%d",&tyear,&tmonth,&tday,&thour,&tmin,&tsec);
-         TIME_HEAD NewTime;
-         NewTime.sec = tsec;
-         NewTime.minute = tmin;
-         NewTime.hour = thour;
-         NewTime.day = tday;
-         NewTime.month = tmonth;
-         NewTime.year = tyear-2000;
-         ULONG newtime=RTCToUNIXTime(&NewTime);  //get new time in seconds
-         startTime=RTCToUNIXTime(&NewTime);
-         Teensy3Clock.set(newtime); 
-         Serial.print("Clock Set: ");
-         Serial.println(newtime);
-         break;
-      }
-      
+	{                           
       case ('R' + ('D'<<8)):
       {
         sscanf(&pCmd[3],"%d",&lv1);
@@ -72,23 +52,6 @@ int ProcCmd(char *pCmd)
         noDC = lv1;
         break;
       }
-      
-      case ('S' + ('R'<<8)):
-      {
-        //start time
-         sscanf(&pCmd[3],"%d-%d-%d %d:%d:%d",&tyear,&tmonth,&tday,&thour,&tmin,&tsec);
-         TIME_HEAD NewTime;
-         NewTime.sec = tsec;
-         NewTime.minute = tmin;
-         NewTime.hour = thour;
-         NewTime.day = tday;
-         NewTime.month = tmonth;
-         NewTime.year = tyear-2000;
-         startTime=RTCToUNIXTime(&NewTime);
-         Serial.print("Start Record Set: ");
-         Serial.println(startTime);
-         break;
-      } 
 	}	
 	return TRUE;
 }
@@ -157,7 +120,3 @@ boolean LoadScript()
   }
  return 1;	
 }
-
-
-
-

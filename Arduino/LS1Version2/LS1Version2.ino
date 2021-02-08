@@ -67,10 +67,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 #define NREC 32 // increase disk buffer to speed up disk access
 
-
-
 static uint8_t myID[8];
-
 unsigned long baud = 115200;
 
 #define SECONDS_IN_MINUTE 60
@@ -237,14 +234,10 @@ void setup() {
   Serial.println(RTC_TSR);
   
   Wire.begin();
-  Serial.println("Wire");
-
   pinMode(vSense, INPUT);
   analogReference(DEFAULT);
-  
   pinMode(hydroPowPin, OUTPUT);
   digitalWrite(hydroPowPin, HIGH);
-
   pinMode(SDPOW1, OUTPUT);
   pinMode(SDPOW2, OUTPUT);
   pinMode(SDPOW3, OUTPUT);
@@ -254,14 +247,10 @@ void setup() {
   digitalWrite(SDPOW3, LOW);
   digitalWrite(SDPOW4, LOW);
 
-
   //setup display and controls
   pinMode(UP, INPUT_PULLUP);
   pinMode(DOWN, INPUT_PULLUP);
   pinMode(SELECT, INPUT_PULLUP);
-  
-  //setSyncProvider(getTeensy3Time); //use Teensy RTC to keep time
-  t = getTeensy3Time();
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //initialize display
   delay(140);
@@ -693,48 +682,10 @@ time_t getTeensy3Time()
   }
 }
 
-unsigned long processSyncMessage() {
-  unsigned long pctime = 0L;
-  const unsigned long DEFAULT_TIME = 1451606400; // Jan 1 2016
-} 
-  
-// Calculates Accurate UNIX Time Based on RTC Timestamp
-unsigned long RTCToUNIXTime(TIME_HEAD *tm){
-    int i;
-    unsigned const char DaysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-    unsigned long Ticks = 0;
-
-    long yearsSince = tm->year + 30; // Years since 1970
-    long numLeaps = yearsSince >> 2; // yearsSince / 4 truncated
-
-    if((!(tm->year%4)) && (tm->month>2))
-            Ticks+=SECONDS_IN_DAY;  //dm 8/9/2012  If current year is leap, add one day
-
-    // Calculate Year Ticks
-    Ticks += (yearsSince-numLeaps)*SECONDS_IN_YEAR;
-    Ticks += numLeaps * SECONDS_IN_LEAP;
-
-    // Calculate Month Ticks
-    for(i=0; i < tm->month-1; i++){
-         Ticks += DaysInMonth[i] * SECONDS_IN_DAY;
-    }
-
-    // Calculate Day Ticks
-    Ticks += (tm->day - 1) * SECONDS_IN_DAY;
-
-    // Calculate Time Ticks CHANGES ARE HERE
-    Ticks += (ULONG)tm->hour * SECONDS_IN_HOUR;
-    Ticks += (ULONG)tm->minute * SECONDS_IN_MINUTE;
-    Ticks += tm->sec;
-
-    return Ticks;
-}
-
 void resetFunc(void){
   EEPROM.write(20, 1); // reset indicator register
   CPU_RESTART
 }
-
 
 void read_EE(uint8_t word, uint8_t *buf, uint8_t offset)  {
   noInterrupts();
