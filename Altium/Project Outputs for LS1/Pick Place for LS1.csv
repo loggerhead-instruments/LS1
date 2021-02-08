@@ -1,0 +1,102 @@
+Designator,Comment,Layer,Footprint,Center-Y(mm),Center-X(mm),,,,,,X,Y,Rotation,Description
+C40,0.01uF,BottomLayer,402,-50.292,65.913,-27.3,10.6,,-27.317,10.584,,,270,Ceramic Chip Capacitor - Standard
+C39,0.01uF,BottomLayer,402,-14.986,9.652,,,,-62.623,66.845,,,360,Ceramic Chip Capacitor - Standard
+C36,0.01uF,BottomLayer,402,-34.798,28.702,,,,-42.811,47.795,,,360,Ceramic Chip Capacitor - Standard
+C6,0.01uF,BottomLayer,402,-37.465,68.326,,,,-40.144,8.171,,,270,Ceramic Chip Capacitor - Standard
+C37,0.1uF,BottomLayer,402,-50.292,63.881,,,,-27.317,12.616,,,270,Ceramic Chip Capacitor - Standard
+C33,0.1uF,BottomLayer,402,-17.018,9.652,,,,-60.591,66.845,,,360,Ceramic Chip Capacitor - Standard
+C30,0.1uF,BottomLayer,402,-36.703,28.702,,,,-40.906,47.795,,,360,Ceramic Chip Capacitor - Standard
+C2,0.1uF,BottomLayer,402,-37.719,66.421,,,,-39.89,10.076,,,270,Ceramic Chip Capacitor - Standard
+C35,10uF,BottomLayer,Tant0805,-50.419,62.357,,,,-27.19,14.14,,,90,
+C31,10uF,BottomLayer,Tant0805,-18.542,9.652,,,,-59.067,66.845,,,180,
+C29,10uF,BottomLayer,Tant0805,-38.481,28.702,,,,-39.128,47.795,,,180,
+C1,10uF,BottomLayer,Tant0805,-37.846,64.77,,,,-39.763,11.727,,,90,
+C38,1uF,BottomLayer,402,-42.799,64.008,,,,-34.81,12.489,,,90,Ceramic Chip Capacitor - Standard
+C34,1uF,BottomLayer,402,-16.764,3.175,,,,-60.845,73.322,,,90,Ceramic Chip Capacitor - Standard
+C32,1uF,BottomLayer,402,-36.322,22.479,,,,-41.287,54.018,,,90,Ceramic Chip Capacitor - Standard
+C4,1uF,BottomLayer,402,-31.242,66.421,,,,-46.367,10.076,,,360,Ceramic Chip Capacitor - Standard
+P24,CoinCellHolder,BottomLayer,CoinCellHolder,-36.785,9.652,,,,,,,,90,
+U10,DS3231,BottomLayer,DS3231,-4.318,10.4,,,,,,,,360,
+U9,LP3985IM5-3.3,BottomLayer,MF05A_N,-46.609,64.897,-31,11.6,,-77.609,76.497,,,270,"Micropower, 150mA Low-Noise Ultra Low-Dropout CMOS Voltage Regulator"
+U8,LP3985IM5-3.3,BottomLayer,MF05A_N,-16.002,6.096,-61.8,70.2,,-77.802,76.296,,,360,"Micropower, 150mA Low-Noise Ultra Low-Dropout CMOS Voltage Regulator"
+U7,LP3985IM5-3.3,BottomLayer,MF05A_N,-35.687,25.273,,,,,,,,360,"Micropower, 150mA Low-Noise Ultra Low-Dropout CMOS Voltage Regulator"
+U1,LP3985IM5-3.3,BottomLayer,MF05A_N,-34.036,67.31,,,,,,,,270,"Micropower, 150mA Low-Noise Ultra Low-Dropout CMOS Voltage Regulator"
+,Header 2,TopLayer,HDR1X2,-63.881,16.891,,,,,,,,180,"Header, 2-Pin"
+,Header 2,TopLayer,HDR1X2,-61.595,23.368,,,,,,,,180,"Header, 2-Pin"
+,HYDROPHONE_MON,TopLayer,HDR1X3,-58.674,31.369,,,,,,,,180,"Header, 3-Pin"
+CAL,MJ1-3510-SMT,TopLayer,CUI_MJ1-3510-SMT,-78.197,8.643,,,,,,,,0,"3.5 mm, Mono, Right Angle, Surface Mount (SMT), Audio Jack Connector"
+R10,10k,TopLayer,3-0603,-24.765,17.907,,,,,,,,180,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R9,10k,TopLayer,3-0603,-29.718,18.288,,,,,,,,180,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R8,10k,TopLayer,3-0603,-11.303,9.525,,,,,,,,180,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R7,0X,TopLayer,3-0603,-57.023,15.367,,,,,,,,360,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+P25,Header 2,TopLayer,HDR1X2,-9.652,47.752,,,,,,,,180,"Header, 2-Pin"
+P19,microUSB,TopLayer,microUSB-B,-7.661,69.444,,,,,,,,90,
+P18,Header 3,TopLayer,HDR1X3,-79.339,56.4388,,,,,,,,90,"Header, 3-Pin"
+C28,1.0uF,TopLayer,402,-67.528,42.47,,,,,,,,360,Ceramic Chip Capacitor - Standard
+C27,1.0uF,TopLayer,402,-66.258,42.47,,,,,,,,360,Ceramic Chip Capacitor - Standard
+U6,MCP1700T-1802E/TT,TopLayer,SOT-23-TT3_N,-57.622,43.867,,,,,,,,180,"Low Quiescent Current LDO, 3-Pin SOT-23, Extended Temperature, Tape and Reel"
+U5,LP3985IM5-3.3,TopLayer,MF05A_N,-63.591,59.996,,,,,,,,180,"Micropower, 150mA Low-Noise Ultra Low-Dropout CMOS Voltage Regulator"
+U4,LP3985IM5-3.3,TopLayer,MF05A_N,-58.13,20.626,,,,,,,,0,"Micropower, 150mA Low-Noise Ultra Low-Dropout CMOS Voltage Regulator"
+U3,SGTL5000,TopLayer,QFN32,-62.829,49.709,,,,,,,,360,SGTL5000
+U2,LP3985IM5-3.3,TopLayer,MF05A_N,-78.196,42.216,,,,,,,,0,"Micropower, 150mA Low-Noise Ultra Low-Dropout CMOS Voltage Regulator"
+R6,10k,TopLayer,3-0603,-29.682,40.692,,,,,,,,90,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R5,10k,TopLayer,3-0603,-28.158,44.375,,,,,,,,0,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R4,10k,TopLayer,3-0603,-42.509,55.424,,,,,,,,270,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R3,10k,TopLayer,3-0603,-40.731,38.66,,,,,,,,180,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R2,100k,TopLayer,3-0603,-38.608,54.356,,,,,,,,180,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+R1,100k,TopLayer,3-0603,-37.084,54.356,,,,,,,,0,"Precision Thick Film Chip Resistor, 10 Ohm to 1M Ohm Range, 1% and 0.5% Tolerance, 0603 Size, 0.063 W"
+P17,HYDROPHONE,TopLayer,HDR1X3,-61.432,41.581,,,,,,,,180,"Header, 3-Pin"
+P16,HYDROPHONE,TopLayer,HDR1X3,-61.468,31.369,,,,,,,,180,"Header, 3-Pin"
+P15,pushbutton,TopLayer,SOP4,-18.851,26.573,,,,,,,,0,
+P14,pushbutton,TopLayer,SOP4,-27.868,26.573,,,,,,,,0,
+P13,pushbutton,TopLayer,SOP4,-9.707,26.573,,,,,,,,0,
+P12,Header 2,TopLayer,HDR1X2,-68.834,3.556,,,,,,,,180,"Header, 2-Pin"
+P11,Header 4,TopLayer,HDR1X4,-47.208,20.372,,,,,,,,90,"Header, 4-Pin"
+P10,Header 6,TopLayer,HDR1X6,-8.981,1.068,,,,,,,,90,"Header, 6-Pin"
+P9,BIG CAP 1000 uF,TopLayer,HDR1X3,-22.098,15.748,,,,,,,,360,"Header, 3-Pin"
+P8,BIG CAP 1000 uF,TopLayer,HDR1X3,-3.429,27.178,,,,,,,,360,"Header, 3-Pin"
+P7,microSD Hirose,TopLayer,DM3D_microSD,-48.7955,6.328,,,,,,,,360,
+P6,microSD Hirose,TopLayer,DM3D_microSD,-32.4125,6.328,,,,,,,,360,
+P5,microSD Hirose,TopLayer,DM3D_microSD,-49.5575,65.658,,,,,,,,180,
+P4,microSD Hirose,TopLayer,DM3D_microSD,-33.0475,65.658,,,,,,,,180,
+P3,Header 2,TopLayer,HDR1X2,-9.652,39.243,,,,,,,,180,"Header, 2-Pin"
+P2,switch,TopLayer,HDR1X3,-0.345,27.23,,,,,,,,180,"Header, 3-Pin"
+P1,Teensy3.x,TopLayer,Teensy3.x,-29.301,42.597,,,,,,,,180,
+C26,1uF,TopLayer,402,-58.13,41.454,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C25,10uF,TopLayer,Tant0805,-57.749,47.931,,,,,,,,90,
+C24,1.0uF,TopLayer,402,-64.099,35.993,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C23,1.0uF,TopLayer,402,-68.29,35.993,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C22,0.01uF,TopLayer,402,-60.924,58.218,,,,,,,,180,Ceramic Chip Capacitor - Standard
+C21,1uF,TopLayer,402,-63.845,62.79,,,,,,,,90,Ceramic Chip Capacitor - Standard
+C20,0.1uF,TopLayer,402,-63.718,57.075,,,,,,,,90,Ceramic Chip Capacitor - Standard
+C19,10uF,TopLayer,Tant0805,-63.718,55.551,,,,,,,,270,
+C18,0.1uF,TopLayer,402,-66.639,47.027,,,,,,,,180,Ceramic Chip Capacitor - Standard
+C17,0.01uF,TopLayer,402,-59.436,24.384,,,,,,,,360,Ceramic Chip Capacitor - Standard
+C16,0.1uF,TopLayer,402,-63.591,54.154,,,,,,,,90,Ceramic Chip Capacitor - Standard
+C15,1uF,TopLayer,402,-57.749,17.832,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C14,0.1uF,TopLayer,402,-57.404,23.368,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C13,10uF,TopLayer,Tant0805,-57.404,25.019,,,,,,,,90,
+C12,0.1uF,TopLayer,402,-62.448,46.026,,,,,,,,90,Ceramic Chip Capacitor - Standard
+C11,0.01uF,TopLayer,402,-80.609,44.375,,,,,,,,360,Ceramic Chip Capacitor - Standard
+C10,1uF,TopLayer,402,-77.942,39.422,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C9,0.1uF,TopLayer,402,-77.815,44.883,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C8,10uF,TopLayer,Tant0805,-77.815,46.28,,,,,,,,90,
+C7,0.1uF,TopLayer,402,-57.749,46.534,,,,,,,,270,Ceramic Chip Capacitor - Standard
+C5,0.1uF,TopLayer,402,-5.044,19.61,,,,,,,,180,Ceramic Chip Capacitor - Standard
+C3,10uF,TopLayer,Tant0805,-3.647,19.61,,,,,,,,0,
+P20,1x4 1.27mm,TopLayer,Header1x4_1.27mm,-50.038,27.051,,,,,,,,360,
+P21,1x4 1.27mm,TopLayer,Header1x4_1.27mm,-44.069,31.115,,,,,,,,90,
+P22,1x4 1.27mm,TopLayer,Header1x4_1.27mm,-44.069,23.368,,,,,,,,90,
+P23,1x4 1.27mm,TopLayer,Header1x4_1.27mm,-44.069,27.305,,,,,,,,90,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
