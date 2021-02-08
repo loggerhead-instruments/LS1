@@ -2,9 +2,17 @@
 // LS1 acoustic recorder
 //
 // Loggerhead Instruments
-// 2016-2018
+// 2021
 // David Mann
 
+// To Do:
+// - sync Teensy clock to DS3231 every file
+// - test card switching
+// - measure current draw
+// - measure current draw with powering down microSD between duty cycle files
+// - test autostart after 10 minutes 
+// - test rapid file close and open
+// - long term test
 // 
 // Modified from PJRC audio code
 // http://www.pjrc.com/store/teensy3_audio.html
@@ -242,7 +250,7 @@ void setup() {
   pinMode(SDPOW2, OUTPUT);
   pinMode(SDPOW3, OUTPUT);
   pinMode(SDPOW4, OUTPUT);
-  digitalWrite(SDPOW1, HIGH);
+  digitalWrite(SDPOW1, LOW); // start all cards switched off in case of reset
   digitalWrite(SDPOW2, LOW);
   digitalWrite(SDPOW3, LOW);
   digitalWrite(SDPOW4, LOW);
@@ -276,10 +284,10 @@ void setup() {
   if(rec_int > 60) roundSeconds = 60;
   if(rec_int > 300) roundSeconds = 300;
   
-  t = getTeensy3Time();
-  setTeensyTime(hour(t),minute(t),second(t),day(t),month(t),year(t)); // sync from DS3231 to Teensy time
+  t = getTeensy3Time(1);  // sync teensy rtc to DS3231
+
   startTime = t;
-  //startTime = getTeensy3Time();
+  //startTime = getTeensy3Time(0);
   startTime -= startTime % roundSeconds;  
   startTime += roundSeconds; //move forward
   stopTime = startTime + rec_dur;  // this will be set on start of recording
@@ -330,7 +338,7 @@ void loop() {
   // Standby mode
   if(mode == 0)
   {
-      t = getTeensy3Time();
+      t = getTeensy3Time(0);
       cDisplay();
       display.println("Next Start");
       display.setTextSize(1);
@@ -374,7 +382,7 @@ void loop() {
         
 
         Serial.print("Current Time: ");
-        printTime(getTeensy3Time());
+        printTime(getTeensy3Time(0));
         Serial.print("Stop Time: ");
         printTime(stopTime);
         Serial.print("Next Start:");
@@ -411,7 +419,7 @@ void loop() {
     }
     
     if(buf_count >= nbufs_per_file){       // time to stop?
-      if(((rec_int == 0) & (recMode==MODE_NORMAL)) | ((rec_int == 0) & (recMode==MODE_DIEL) & (getTeensy3Time()<stopTime))){
+      if(((rec_int == 0) & (recMode==MODE_NORMAL)) | ((rec_int == 0) & (recMode==MODE_DIEL) & (getTeensy3Time(0)<stopTime))){
         frec.close();
         checkSD();
         FileInit();  // make a new file
@@ -424,7 +432,7 @@ void loop() {
       else{
         stopRecording();
         checkSD();
-        long ss = startTime - getTeensy3Time() - wakeahead;
+        long ss = startTime - getTeensy3Time(0) - wakeahead;
         if (ss<0) ss=0;
         snooze_hour = floor(ss/3600);
         ss -= snooze_hour * 3600;
@@ -519,7 +527,7 @@ void stopRecording() {
 
 void FileInit()
 {
-   t = getTeensy3Time();
+   t = getTeensy3Time(1); // this will also sync teensy clock used to wake up to DS3231
    
    if (folderMonth != month(t)){
     if(printDiags) Serial.println("New Folder");
@@ -635,7 +643,7 @@ void logFileHeader(){
 //This function returns the date and time for SD card file access and modify time. One needs to call in setup() to register this callback function: SdFile::dateTimeCallback(file_date_time);
 void file_date_time(uint16_t* date, uint16_t* time) 
 {
-  t = getTeensy3Time();
+  t = getTeensy3Time(0);
   #if USE_SDFS==1
     *date=FS_DATE(year(t),month(t),day(t));
     *time=FS_TIME(hour(t),minute(t),second(t));
@@ -673,9 +681,10 @@ void calcGain(){
   }
 }
 
-time_t getTeensy3Time()
+time_t getTeensy3Time(boolean syncTeensy)
 {
   if(readRTC()){
+    if(syncTeensy) setTeensyTime(hour(t),minute(t),second(t),day(t),month(t),year(t)); // sync from DS3231 to Teensy time
     return t;  // DS3231 read successful
   }else{
     return Teensy3Clock.get();  // fall back to Teensy internal clock
@@ -775,7 +784,7 @@ void setDielTime(){
        tmStart.Minute = startMinute;
        tmStart.Second = 0;
        startTime = makeTime(tmStart);
-       if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
+       if(startTime < getTeensy3Time(0)) startTime += SECS_PER_DAY;  // make sure after current time
        Serial.print("New diel start:");
        printTime(startTime);
      }
@@ -790,7 +799,7 @@ void setDielTime(){
        tmStart.Minute = startMinute;
        tmStart.Second = 0;
        startTime = makeTime(tmStart);
-       if(startTime < getTeensy3Time()) startTime += SECS_PER_DAY;  // make sure after current time
+       if(startTime < getTeensy3Time(0)) startTime += SECS_PER_DAY;  // make sure after current time
        Serial.print("New diel start:");
        printTime(startTime);
     }
