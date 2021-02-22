@@ -1,0 +1,44 @@
+Change Component Designator: OldDesignator= NewDesignator=P26
+Change Component Designator: OldDesignator= NewDesignator=P27
+Change Component Designator: OldDesignator= NewDesignator=P28
+Change Component Designator: OldDesignator=CAL NewDesignator=J1
+Change component parameters: Designator = "C25" ("C25"); Footprint = "Tant0805"; UniqueID = "\PPMHGUCJ" ("\PPMHGUCJ")
+Change component parameters (AddParameter): Name = "Value"; Value = "10uF"; VariantName = "[No Variations]"
+Change component parameters: Designator = "U6" ("U6"); Footprint = "SOT-23-TT3_N"; UniqueID = "\BGTRWQMQ" ("\BGTRWQMQ")
+Change component parameters (AddParameter): Name = "Code_IPC"; Value = "SOT23-3"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink1Description"; Value = "Manufacturer URL"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink1URL"; Value = "http://www.microchip.com/"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink2Description"; Value = "Datasheet"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink2URL"; Value = "http://ww1.microchip.com/downloads/en/DeviceDoc/21826b.pdf"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink3Description"; Value = "Package Specification"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink3URL"; Value = "http://www.microchip.com/stellent/groups/techpub_sg/documents/packagingspec/en012702.pdf"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "DatasheetVersion"; Value = "revB, Feb-2007"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Manufacturer"; Value = "Microchip"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Mounting Technology"; Value = "Surface Mount"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "PackageDescription"; Value = "3-Lead Plastic Small Outline Transistor (TT) [SOT-23]"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "PackageReference"; Value = "SOT-23-TT3"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "PackageVersion"; Value = "revBB, Aug-2009"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "PartNumber"; Value = "MCP1700T-1802E/TT"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier 1"; Value = "Digi-Key"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier 2"; Value = "Digi-Key"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier 3"; Value = "Digi-Key"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier 4"; Value = "Farnell"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier 5"; Value = "Farnell"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier 6"; Value = "Newark"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier 7"; Value = "Mouser"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier Part Number 1"; Value = "MCP1700T1802ETTTR-ND"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier Part Number 2"; Value = "MCP1700T1802ETTCT-ND"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier Part Number 3"; Value = "MCP1700T1802ETTDKR-ND"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier Part Number 4"; Value = "1296591RL"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier Part Number 5"; Value = "1296591"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier Part Number 6"; Value = "84R5175"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Supplier Part Number 7"; Value = "579-MCP1700T1802E/TT"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=VCC Pin=P1-3.3V
+Added Member To Class: ClassName=LS1_audio Member=Component C26 1uF
+Added Member To Class: ClassName=LS1_audio Member=Component J1 MJ1-3510-SMT
+Added Member To Class: ClassName=LS1_audio Member=Component P26 HYDROPHONE_MON
+Added Member To Class: ClassName=LS1_audio Member=Component P27 Header 2
+Added Member To Class: ClassName=LS1_audio Member=Component P28 Header 2
+Added Member To Class: ClassName=LS1_audio Member=Component U6 MCP1700T-1802E/TT
+Added Room: Name=LS1
+Added Room: Name=LS1_audio

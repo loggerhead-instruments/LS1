@@ -30,7 +30,7 @@ ReportSuppressedErrorsInMessages=0
 FSMCodingStyle=eFMSDropDownList_OneProcess
 FSMEncodingStyle=eFMSDropDownList_OneHot
 IsProjectConflictPreventionWarningsEnabled=1
-OutputPath=
+OutputPath=Project Outputs for LS1
 LogFolderPath=
 ManagedProjectGUID=
 IncludeDesignInRelease=0
@@ -192,6 +192,40 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=
 
+[Document10]
+DocumentPath=..\..\altium_library\Texas_Instruments_Power_Management_Linear_Regulator_Single_Channel_LDO_(0-350mA)\TI Power Management Linear Regulator Single Channel LDO (0-350mA).IntLib
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=1
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
+[Document11]
+DocumentPath=LS1.OutJob
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=1
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
 [GeneratedDocument1]
 DocumentPath=Project Outputs for LS1\Design Rule Check - LS1.html
 DItemRevisionGUID=
@@ -220,7 +254,7 @@ AddNetPorts=-1
 ShowComponentParameters=-1
 GlobalBookmarks=0
 ExportBOM=-1
-TemplateFilename=
+TemplateFilename=Board Stack Report.XLT
 TemplateStoreRelative=-1
 PCB_PrintColor=0
 SCH_PrintColor=0
@@ -240,9 +274,10 @@ SCH_ExpandSheetNumber=0
 SCH_ExpandDocumentNumber=0
 SCH_HasExpandLogicalToPhysicalSheets=-1
 SaveSettingsToOutJob=-1
+PrintQuality=-3
 
 [Generic_EDE]
-OutputDir=
+OutputDir=Project Outputs for LS1
 
 [OutputGroup1]
 Name=Netlist Outputs
@@ -353,7 +388,7 @@ OutputDefault20=0
 [OutputGroup2]
 Name=Simulator Outputs
 Description=
-TargetPrinter=OneNote for Windows 10
+TargetPrinter=HQ NPID79B7C (HP LaserJet Pro M148dw)
 PrinterOptions=Record=PrinterOptions|Copies=1|Duplex=1|TrueTypeOptions=3|Collate=1|PrintJobKind=1|PrintWhat=1
 
 [OutputGroup3]
