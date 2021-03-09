@@ -5,26 +5,35 @@
 // 2021
 // David Mann
 
-// To Do:
-// - sync Teensy clock to DS3231 every file
-// - test card switching
-// - measure current draw
-// - measure current draw with powering down microSD between duty cycle files
-// - test autostart after 10 minutes 
-// - test rapid file close and open
-// - long term test
+// To Do: 
+// - test card switching (need to create folder when switch)
+// - measure current draw 
+//    - 96 MHz 48 kHz: 32 GB microSD; 46 mA record  2.8 mA sleep with microSD powered
+//    - 96 MHz 48 kHz: 32 GB microSD; 46 mA record 2.6 mA sleep with microSD powered off
+//    - 72 MHz 48 kHz: 32 GB microSD; 42 mA record  2.6-2.7 mA sleep with microSD powered off
+//    - 72 MHz 48 kHz: 1 TB microSD; 32-44 mA (very spiky)record 3.8 mA sleep with microSD powered off (voltage regulator still shows 2.79 V when off)
+//    - 72 MHz 48 kHz: 1 TB microSD; 32-44 mA (very spiky)record 3.9 mA sleep with microSD powered off, CS low, MISO/MOSI LOW. (voltage regulator still shows 2.79 V when off)
+
+//    - 72 MHz 48 kHz: 32 GB microSD; 42 mA record 2.8 mA sleep with microSD powered off;CS low, MISO/MOSI INPUT_DISABLE. 
+//    - 72 MHz 48 kHz: 1 TB microSD; 38 mA record 2.7 mA sleep with microSD powered off;CS low, MISO/MOSI INPUT_DISABLE. Shows 0.9V at LDO for uSD.
+//    - 72 MHz 48 kHz: 1 TB microSD; 38 mA record 2.7 mA sleep with microSD powered off;CS low, MISO/MOSI INPUT_DISABLE. I2S input disable (new audio is zeros after sleep)
+
+// - filenames Manta compliant
+// - test continuous record
+// - check voltage read accuracy
+
 // 
 // Modified from PJRC audio code
 // http://www.pjrc.com/store/teensy3_audio.html
 //
 // Compile with 72 MHz Fastest
 
-// Modified by WMXZ 15-05-2018 for SdFS anf multiple sampling frequencies
+// Modified by WMXZ 15-05-2018 for SdFS and multiple sampling frequencies
 // Optionally uses SdFS from Bill Greiman https://github.com/greiman/SdFs; but has higher current draw in sleep
 
 //*****************************************************************************************
 
-char codeVersion[12] = "2021-02-08";
+char codeVersion[12] = "2021-03-09";
 static boolean printDiags = 0;  // 1: serial print diagnostics; 0: no diagnostics
 #define USE_SDFS 0  // to be used for exFAT but works also for FAT16/32
 #define MQ 100 // to be used with LHI record queue (modified local version)
@@ -75,7 +84,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 #define NREC 32 // increase disk buffer to speed up disk access
 
-static uint8_t myID[8];
+static uint32_t myID[2];
 unsigned long baud = 115200;
 
 #define SECONDS_IN_MINUTE 60
@@ -173,7 +182,7 @@ long nbufs_per_file;
 boolean settingsChanged = 0;
 
 long file_count;
-char filename[40];
+char filename[60];
 char dirname[20];
 int folderMonth;
 
@@ -379,8 +388,7 @@ void loop() {
             setDielTime(); // make sure new start is in diel window
           }
         }
-        
-
+      
         Serial.print("Current Time: ");
         printTime(getTeensy3Time(0));
         Serial.print("Stop Time: ");
@@ -442,7 +450,18 @@ void loop() {
         
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
             digitalWrite(hydroPowPin, LOW); //hydrophone off
-            audio_power_down();  // when this is activated, seems to occassionally have trouble restarting; no LRCLK signal or RX on Teensy
+            audio_power_down(); 
+            digitalWrite(sdPowSelect[currentCard], LOW);
+            digitalWrite(chipSelect[currentCard], LOW);
+            // MISO, MOSI, SCLK LOW
+            digitalWrite(7, LOW);
+            digitalWrite(12, LOW);
+            digitalWrite(14, LOW);
+            pinMode(7, INPUT_DISABLE);
+            pinMode(12, INPUT_DISABLE);
+            pinMode(14, INPUT_DISABLE);
+            pinMode(chipSelect[currentCard], INPUT_DISABLE);
+
             if(printDiags){
               Serial.print("Snooze HH MM SS ");
               Serial.print(snooze_hour);
@@ -459,7 +478,10 @@ void loop() {
             
             // Waking up
            // if (printDiags==0) usbDisable();
-
+            digitalWrite(sdPowSelect[currentCard], HIGH);
+            pinMode(chipSelect[currentCard], OUTPUT);
+            delay(10);
+            sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50));
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
             delay(300);  // give time for Serial to reconnect to USB
             AudioInit(isf);
@@ -477,6 +499,7 @@ void loop() {
 
 void startRecording() {
   if (printDiags)  Serial.println("startRecording");
+  writeLogFile();
   FileInit();
   buf_count = 0;
   queue1.begin();
@@ -540,55 +563,16 @@ void FileInit()
     #endif
     sd.mkdir(dirname);
    }
-   pinMode(vSense, INPUT);  // get ready to read voltage
-
+   
    // open file 
    sd.chdir(dirname);
-   sprintf(filename,"%04d%02d%02dT%02d%02d%02d.wav", year(t), month(t), day(t), hour(t), minute(t), second(t));  //filename is DDHHMMSS
+   sprintf(filename,"%04d%02d%02dT%02d%02d%02d_%lu%lu_%2.1f.wav", year(t), month(t), day(t), hour(t), minute(t), second(t), myID[0], myID[1], gainDb);  //filename is DDHHMMSS
 
-
-   // log file
   #if USE_SDFS==1
     FsDateTime::callback = file_date_time;
   #else
     SdFile::dateTimeCallback(file_date_time);
   #endif
-
-   float voltage = readVoltage();
-   
-  sd.chdir(); // only to be sure to start from root
-  #if USE_SDFS==1
-    if(FsFile logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
-  #else
-    if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
-  #endif
-      logFile.print(filename);
-      logFile.print(',');
-      for(int n=0; n<8; n++){
-        logFile.print(myID[n]);
-      }
-      logFile.print(',');
-      logFile.print(gainDb); 
-      logFile.print(',');
-      logFile.print(voltage); 
-      logFile.print(',');
-      logFile.println(codeVersion);
-      if(voltage < 3.0){
-        logFile.println("Stopping because Voltage less than 3.0 V");
-        logFile.close();  
-        // low voltage hang but keep checking voltage
-        while(readVoltage() < 3.3){
-            delay(30000);
-        }
-        resetFunc(); //reset so start timing correctly again
-      }
-      logFile.close();
-   }
-   else{
-    if(printDiags) Serial.print("Log open fail.");
-    resetFunc();
-   }
-
     
    sd.chdir(dirname);
    frec = sd.open(filename, O_WRITE | O_CREAT | O_EXCL);
@@ -603,7 +587,6 @@ void FileInit()
     delay(10);
     if(file_count>1000) resetFunc(); // give up after many tries
    }
-
 
     //intialize .wav file header
     sprintf(wav_hdr.rId,"RIFF");
@@ -623,21 +606,72 @@ void FileInit()
   
     frec.write((uint8_t *)&wav_hdr, 44);
 
-  Serial.print("Buffers: ");
-  Serial.println(nbufs_per_file);
+    Serial.print("Buffers: ");
+    Serial.println(nbufs_per_file);
 }
 
 void logFileHeader(){
 
    sd.chdir(); // only to be sure to star from root
-#if USE_SDFS==1
-  if(FsFile logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
-#else
-  if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
-#endif
-      logFile.println("filename, ID, gain (dB), Voltage, Version");
+  #if USE_SDFS==1
+    if(FsFile logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+  #else
+    if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+  #endif
+      logFile.println("datetime, gain (dB), Voltage, Version");
       logFile.close();
   }
+}
+
+
+void writeLogFile(){
+  t = getTeensy3Time(1); // this will also sync teensy clock used to wake up to DS3231
+  pinMode(vSense, INPUT);  // get ready to read voltage
+  float voltage = readVoltage();
+  #if USE_SDFS==1
+    FsDateTime::callback = file_date_time;
+  #else
+    SdFile::dateTimeCallback(file_date_time);
+  #endif
+
+  sd.chdir(); // only to be sure to start from root
+  
+  #if USE_SDFS==1
+    if(FsFile logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+  #else
+    if(File logFile = sd.open("LOG.CSV",  O_CREAT | O_APPEND | O_WRITE)){
+  #endif
+      //logFile.print(t);
+      logFile.print(year(t)); logFile.print("-");
+      logFile.print(month(t)); logFile.print("-");
+      logFile.print(day(t)); logFile.print(" ");
+      if(hour(t)<10) logFile.print("0");
+      logFile.print(hour(t)); logFile.print(":");
+      if(minute(t)<10) logFile.print("0");
+      logFile.print(minute(t)); logFile.print(":");
+      if(second(t)<10) logFile.print("0");
+      logFile.print(second(t)); 
+      logFile.print(',');
+      logFile.print(gainDb); 
+      logFile.print(',');
+      logFile.print(voltage); 
+      logFile.print(',');
+      logFile.println(codeVersion);
+//      if(voltage < 3.0){
+//        logFile.println("Stopping because Voltage less than 3.0 V");
+//        logFile.close();  
+//        // low voltage hang but keep checking voltage
+//        while(readVoltage() < 3.3){
+//            delay(30000);
+//        }
+//        resetFunc(); //reset so start timing correctly again
+//      }
+      logFile.close();
+   }
+   else{
+    if(printDiags) Serial.print("Log open fail.");
+    resetFunc();
+   }
 }
 
 //This function returns the date and time for SD card file access and modify time. One needs to call in setup() to register this callback function: SdFile::dateTimeCallback(file_date_time);
@@ -693,6 +727,22 @@ time_t getTeensy3Time(boolean syncTeensy)
 
 void resetFunc(void){
   EEPROM.write(20, 1); // reset indicator register
+  frec.close();  // close file if open
+  // MISO, MOSI, SCLK LOW
+  digitalWrite(7, LOW);
+  digitalWrite(12, LOW);
+  digitalWrite(14, LOW);
+  pinMode(7, INPUT_DISABLE);
+  pinMode(12, INPUT_DISABLE);
+  pinMode(14, INPUT_DISABLE);
+  
+  // power down all SD cards
+  for(int n = 0; n<4; n++){
+    digitalWrite(sdPowSelect[n], LOW);
+    digitalWrite(chipSelect[n], LOW);
+    pinMode(chipSelect[n], INPUT_DISABLE);
+  }
+  delay(10);
   CPU_RESTART
 }
 
@@ -714,8 +764,10 @@ void read_EE(uint8_t word, uint8_t *buf, uint8_t offset)  {
 
     
 void read_myID() {
-  read_EE(0xe,myID,0); // should be 04 E9 E5 xx, this being PJRC's registered OUI
-  read_EE(0xf,myID,4); // xx xx xx xx
+//  myID[0] = SIM_UIDH;
+  myID[0] = SIM_UIDMH;
+  myID[1] = SIM_UIDML;
+//  myID[3] = SIM_UIDL;
 }
 
 float readVoltage(){
@@ -723,7 +775,7 @@ float readVoltage(){
    for(int n = 0; n<8; n++){
     voltage += (float) analogRead(vSense) / 1024.0;
    }
-   voltage = 5.9 * voltage / 8.0;   //fudging scaling based on actual measurements; shoud be max of 3.3V at 1023
+   voltage = 7.27 *(voltage / 8.0);   //fudging scaling based on actual measurements; shoud be max of 3.3V at 1023
    return voltage;
 }
 
@@ -743,7 +795,7 @@ void checkSD(){
     if(currentCard == 4)  // all cards full
     {
       if(printDiags) Serial.println("All cards full");
-      while(1);
+      resetFunc(); // try resetting in case some cards didn't work first time, or there is a bit of memory left
     }
     digitalWrite(sdPowSelect[currentCard], HIGH);
     delay(50); // time to power up
@@ -752,6 +804,8 @@ void checkSD(){
         Serial.print("Unable to access the SD card: ");
         Serial.println(currentCard + 1);
         }
+        filesPerCard[currentCard] = 0;
+        currentCard += 1; //skip to next card if can't open this one
     }
     else
       logFileHeader();

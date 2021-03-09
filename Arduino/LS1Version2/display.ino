@@ -98,19 +98,19 @@ void manualSettings(){
         display.println("  None");
         display.display();
     }
+    digitalWrite(sdPowSelect[n], LOW);
+    digitalWrite(chipSelect[n], HIGH); // disable chip select
   }
 
   // set back to card 1
+  digitalWrite(sdPowSelect[0], HIGH);
+  delay(100);
   if(!sd.begin(chipSelect[0], SD_SCK_MHZ(50))){
     display.print("Card 1 Fail");
     display.display();
     while(1);
   }
-  // power down cards 2-4
-  for(int i = 1; i<4; i++){
-    digitalWrite(sdPowSelect[i], LOW);
-  }
-  
+
   LoadScript(); // secret settings accessible from card 1
   calcGain();
   writeEEPROM(); // update EEPROM in case any settings changed from card
@@ -203,6 +203,9 @@ void manualSettings(){
         break;
       case setRecSleep:
         rec_int = updateVal(rec_int, 0, 3600 * 24);
+        if(rec_int == 0){
+          if(rec_dur < 600) rec_dur = 600;
+        }
         display.print("Slp:");
         display.print(rec_int);
         display.println("s");
