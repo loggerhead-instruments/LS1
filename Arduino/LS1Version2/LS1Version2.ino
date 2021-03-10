@@ -20,7 +20,7 @@
 
 // - filenames Manta compliant
 // - test continuous record
-// - check voltage read accuracy
+// - test 60s rec 60s sleep 1 day
 
 // 
 // Modified from PJRC audio code
@@ -451,16 +451,16 @@ void loop() {
         if( (snooze_hour * 3600) + (snooze_minute * 60) + snooze_second >=10){
             digitalWrite(hydroPowPin, LOW); //hydrophone off
             audio_power_down(); 
-            digitalWrite(sdPowSelect[currentCard], LOW);
-            digitalWrite(chipSelect[currentCard], LOW);
-            // MISO, MOSI, SCLK LOW
-            digitalWrite(7, LOW);
-            digitalWrite(12, LOW);
-            digitalWrite(14, LOW);
-            pinMode(7, INPUT_DISABLE);
-            pinMode(12, INPUT_DISABLE);
-            pinMode(14, INPUT_DISABLE);
-            pinMode(chipSelect[currentCard], INPUT_DISABLE);
+//            digitalWrite(sdPowSelect[currentCard], LOW);
+//            digitalWrite(chipSelect[currentCard], LOW);
+//            // MISO, MOSI, SCLK LOW
+//            digitalWrite(7, LOW);
+//            digitalWrite(12, LOW);
+//            digitalWrite(14, LOW);
+//            pinMode(7, INPUT_DISABLE);
+//            pinMode(12, INPUT_DISABLE);
+//            pinMode(14, INPUT_DISABLE);
+//            pinMode(chipSelect[currentCard], INPUT_DISABLE);
 
             if(printDiags){
               Serial.print("Snooze HH MM SS ");
@@ -478,10 +478,10 @@ void loop() {
             
             // Waking up
            // if (printDiags==0) usbDisable();
-            digitalWrite(sdPowSelect[currentCard], HIGH);
-            pinMode(chipSelect[currentCard], OUTPUT);
-            delay(10);
-            sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50));
+//            digitalWrite(sdPowSelect[currentCard], HIGH);
+//            pinMode(chipSelect[currentCard], OUTPUT);
+//            delay(10);
+//            sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50));
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
             delay(300);  // give time for Serial to reconnect to USB
             AudioInit(isf);
