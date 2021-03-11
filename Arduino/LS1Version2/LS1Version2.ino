@@ -482,6 +482,7 @@ void loop() {
 //            pinMode(chipSelect[currentCard], OUTPUT);
 //            delay(10);
 //            sd.begin(chipSelect[currentCard], SD_SCK_MHZ(50));
+
             digitalWrite(hydroPowPin, HIGH); // hydrophone on
             delay(300);  // give time for Serial to reconnect to USB
             AudioInit(isf);
@@ -765,7 +766,7 @@ void read_EE(uint8_t word, uint8_t *buf, uint8_t offset)  {
     
 void read_myID() {
 //  myID[0] = SIM_UIDH;
-  myID[0] = SIM_UIDMH;
+  myID[0] = SIM_UIDMH; 
   myID[1] = SIM_UIDML;
 //  myID[3] = SIM_UIDL;
 }

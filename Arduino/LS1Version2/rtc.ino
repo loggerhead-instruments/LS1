@@ -54,6 +54,7 @@ void reset_alarm()
 }
 boolean readRTC()
 {
+  Serial.println("Read DS3231: ");
   int i = 0;
   byte buff[7];
   Wire.beginTransmission(RTCAddress); 
@@ -87,6 +88,7 @@ boolean readRTC()
       tm.Month = ds_month;
       tm.Year = ds_year + 30U;
       t = makeTime(tm);
+      Serial.println(t);
       return 1;
   }
   else return 0;
