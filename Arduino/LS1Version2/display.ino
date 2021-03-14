@@ -44,6 +44,12 @@ void manualSettings(){
 
   autoStartTime = getTeensy3Time(0);
 
+  // power cards on
+    for (int n=0; n<4; n++){
+      digitalWrite(sdPowSelect[n], HIGH);
+    }
+    delay(1000);
+
 // get free space on cards
     cDisplay();
     display.print("LS1 v2");
@@ -98,13 +104,13 @@ void manualSettings(){
         display.println("  None");
         display.display();
     }
-    digitalWrite(sdPowSelect[n], LOW);
-    digitalWrite(chipSelect[n], HIGH); // disable chip select
+   // digitalWrite(sdPowSelect[n], LOW);
+   // digitalWrite(chipSelect[n], HIGH); // disable chip select
   }
 
   // set back to card 1
-  digitalWrite(sdPowSelect[0], HIGH);
-  delay(100);
+//  digitalWrite(sdPowSelect[0], HIGH);
+//  delay(100);
   if(!sd.begin(chipSelect[0], SD_SCK_MHZ(50))){
     display.print("Card 1 Fail");
     display.display();

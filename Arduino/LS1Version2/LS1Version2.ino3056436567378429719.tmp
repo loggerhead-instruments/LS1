@@ -779,7 +779,7 @@ float readVoltage(){
    return voltage;
 }
 
-void  (){
+void checkSD(){
   if (filesPerCard[currentCard] > 0) filesPerCard[currentCard] -= 1;
 
   if(printDiags){
